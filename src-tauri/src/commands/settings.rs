@@ -1,0 +1,119 @@
+use std::fs;
+use std::path::PathBuf;
+
+use tauri::{AppHandle, Manager};
+
+const DEFAULT_SETTINGS: &str = r##"{
+  "shell": {
+    "program": "auto",
+    "args": ["-NoLogo", "-NoProfile"]
+  },
+  "appearance": {
+    "theme": "dark",
+    "opacity": 1,
+    "backgroundBlur": false
+  },
+  "terminal": {
+    "fontFamily": "JetBrains Mono, Consolas, monospace",
+    "fontSize": 14,
+    "cursorStyle": "block",
+    "cursorBlink": true,
+    "lineHeight": 1.2
+  },
+  "keybindings": {
+    "newTab": "ctrl+t",
+    "splitRight": "ctrl+\\",
+    "closeTab": "ctrl+w",
+    "settings": "ctrl+,"
+  }
+}
+"##;
+
+fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.join("settings.json"))
+}
+
+fn ensure_settings(app: &AppHandle) -> Result<PathBuf, String> {
+    let path = settings_path(app)?;
+    if !path.exists() {
+        fs::write(&path, DEFAULT_SETTINGS).map_err(|e| e.to_string())?;
+    }
+    Ok(path)
+}
+
+const DEFAULT_INIT_PS1: &str = r##"# AbabilX Terminal shell init - loaded for every new session. Edit freely.
+
+function prompt {
+    $cwd = (Get-Location).Path
+    if ($cwd.StartsWith($HOME)) { $cwd = "~" + $cwd.Substring($HOME.Length) }
+    $esc = [char]27
+    "$esc[38;5;141mAbabilX$esc[0m $esc[36m$cwd$esc[0m $esc[92m>$esc[0m "
+}
+
+Clear-Host
+"##;
+
+fn ensure_init_script(app: &AppHandle) -> Result<PathBuf, String> {
+    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let path = dir.join("init.ps1");
+    if !path.exists() {
+        fs::write(&path, DEFAULT_INIT_PS1).map_err(|e| e.to_string())?;
+    }
+    Ok(path)
+}
+
+/// Shell program + args from settings.json; "auto" resolves the default shell.
+pub fn shell_config(app: &AppHandle) -> (Option<String>, Vec<String>) {
+    let parsed: Option<serde_json::Value> = ensure_settings(app)
+        .ok()
+        .and_then(|path| fs::read_to_string(path).ok())
+        .and_then(|raw| serde_json::from_str(&raw).ok());
+
+    let shell = parsed.as_ref().and_then(|v| v.get("shell"));
+
+    let program = shell
+        .and_then(|s| s.get("program"))
+        .and_then(|p| p.as_str())
+        .filter(|p| !p.is_empty() && *p != "auto")
+        .map(String::from);
+
+    let mut args: Vec<String> = shell
+        .and_then(|s| s.get("args"))
+        .and_then(|a| a.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_else(|| vec!["-NoLogo".into(), "-NoProfile".into()]);
+
+    // Load our own init script (custom prompt) unless the user already
+    // controls startup via -Command/-File in their shell args.
+    let user_controls_startup = args
+        .iter()
+        .any(|a| a.eq_ignore_ascii_case("-command") || a.eq_ignore_ascii_case("-file"));
+    if cfg!(windows) && !user_controls_startup {
+        if let Ok(init) = ensure_init_script(app) {
+            args.push("-NoExit".into());
+            args.push("-Command".into());
+            args.push(format!(". '{}'", init.display()));
+        }
+    }
+
+    (program, args)
+}
+
+#[tauri::command]
+pub fn read_settings(app: AppHandle) -> Result<String, String> {
+    let path = ensure_settings(&app)?;
+    fs::read_to_string(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn open_settings(app: AppHandle) -> Result<(), String> {
+    let path = ensure_settings(&app)?;
+    tauri_plugin_opener::open_path(path, None::<&str>).map_err(|e| e.to_string())
+}

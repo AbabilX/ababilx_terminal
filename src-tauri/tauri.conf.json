@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "terminal-app",
-        "width": 800,
-        "height": 600
+        "title": "AbabilX",
+        "width": 1000,
+        "height": 620
       }
     ],
     "security": {
