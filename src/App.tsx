@@ -1,7 +1,17 @@
+import { useEffect } from "react";
+import { ping } from "./lib/tauri";
+import { Terminal } from "./components/terminal";
+
 function App() {
+  useEffect(() => {
+    ping().then((result) => {
+      console.log("Rust:", result);
+    });
+  }, []);
+
   return (
-    <main className="w-screen h-screen bg-neutral-950 text-white">
-      <h1 className="text-xl p-4 font-semibold">AbabilX Terminal</h1>
+    <main className="w-screen h-screen">
+      <Terminal />
     </main>
   );
 }
