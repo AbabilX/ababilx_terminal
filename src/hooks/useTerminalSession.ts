@@ -4,8 +4,10 @@ import type { Terminal } from "@xterm/xterm";
 import type { FitAddon } from "@xterm/addon-fit";
 
 import { createTerminal } from "../terminal/createTerminal";
+import { applyTerminalSettings } from "../terminal/applyTerminalSettings";
 import { ensureFontsReady } from "../terminal/fonts";
 import { wireTerminal } from "../terminal/wireTerminal";
+import { useSettingsStore } from "../store/settings";
 import type { InputContext } from "../terminal/routeInput";
 import type { PreviewState } from "../components/terminal/PreviewDialog";
 
@@ -25,6 +27,7 @@ export function useTerminalSession({
 }: UseTerminalSessionArgs) {
   const terminalRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
+  const settings = useSettingsStore((s) => s.settings);
 
   useEffect(() => {
     let disposed = false;
@@ -58,6 +61,11 @@ export function useTerminalSession({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  useEffect(() => {
+    if (!terminalRef.current) return;
+    applyTerminalSettings(terminalRef.current, fitRef.current, settings);
+  }, [settings]);
 
   return { terminalRef, fitRef };
 }

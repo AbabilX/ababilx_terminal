@@ -3,12 +3,13 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 
 import { matchesKeybind } from "../lib/keybinds";
-import { resolveTheme } from "../lib/themes";
 import { useSettingsStore } from "../store/settings";
+import { terminalTheme } from "./applyTerminalSettings";
 
 /** Builds an xterm instance styled from settings, with fit + weblinks. */
 export function createTerminal() {
-  const { terminal: term, appearance } = useSettingsStore.getState().settings;
+  const settings = useSettingsStore.getState().settings;
+  const { terminal: term } = settings;
 
   const terminal = new Terminal({
     cursorBlink: term.cursorBlink,
@@ -19,7 +20,7 @@ export function createTerminal() {
     // Transparent canvas: the window's rgba background (settings
     // appearance.background/opacity) shows through the terminal.
     allowTransparency: true,
-    theme: { ...resolveTheme(appearance.theme), background: "#00000000" },
+    theme: terminalTheme(settings),
   });
 
   const fitAddon = new FitAddon();

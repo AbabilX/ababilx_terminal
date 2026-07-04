@@ -25,6 +25,8 @@ export interface AppearanceSettings {
 export interface TerminalSettings {
   fontFamily: string;
   fontSize: number;
+  /** Terminal text color. Use "auto" to follow the selected theme. */
+  foreground: string;
   cursorStyle: "block" | "underline" | "bar";
   cursorBlink: boolean;
   lineHeight: number;
@@ -46,13 +48,14 @@ export const DEFAULT_SETTINGS: AppSettings = {
   terminal: {
     fontFamily: "JetBrains Mono, Consolas, monospace, 'Purno Pran Unicode'",
     fontSize: 14,
+    foreground: "auto",
     cursorStyle: "block",
     cursorBlink: true,
     lineHeight: 1.2,
   },
   keybindings: {
-    newTab: "ctrl+t",
-    splitRight: "ctrl+\\",
+    newTab: "ctrl+shift+t",
+    splitRight: "ctrl+t",
     closeTab: "ctrl+w",
     settings: "ctrl+,",
   },

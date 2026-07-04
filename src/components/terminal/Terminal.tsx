@@ -40,7 +40,7 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
     <>
       <div
         ref={containerRef}
-        className="relative h-full w-full overflow-hidden"
+        className="relative h-full w-full overflow-hidden bg-[var(--app-background)]"
         onClick={() => terminalRef.current?.focus()}
       />
       {preview && <PreviewDialog preview={preview} onClose={closePreview} />}

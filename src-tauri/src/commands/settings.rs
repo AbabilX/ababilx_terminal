@@ -17,13 +17,14 @@ const DEFAULT_SETTINGS: &str = r##"{
   "terminal": {
     "fontFamily": "JetBrains Mono, Consolas, monospace, 'Purno Pran Unicode'",
     "fontSize": 14,
+    "foreground": "auto",
     "cursorStyle": "block",
     "cursorBlink": true,
     "lineHeight": 1.2
   },
   "keybindings": {
-    "newTab": "ctrl+t",
-    "splitRight": "ctrl+\\",
+    "newTab": "ctrl+shift+t",
+    "splitRight": "ctrl+t",
     "closeTab": "ctrl+w",
     "settings": "ctrl+,"
   }
@@ -67,6 +68,58 @@ const RETIRED_FONT_FAMILIES: [&str; 2] = [
     "JetBrains Mono, 'Purno Pran Unicode', Consolas, monospace",
 ];
 
+/// Fills in `appearance.background`/`appearance.blur` for settings.json
+/// files written before those keys existed (old schema: `opacity` +
+/// `backgroundBlur: bool`, no hex background). Without this, `blur_radius`
+/// reads the raw file, finds no `blur` key, and silently leaves the window
+/// blur off no matter what the user edits.
+fn migrate_appearance(raw: &str) -> Option<String> {
+    let mut val: serde_json::Value = serde_json::from_str(raw).ok()?;
+    let appearance = val.get_mut("appearance")?.as_object_mut()?;
+    let mut changed = false;
+    if !appearance.contains_key("background") {
+        appearance.insert("background".into(), serde_json::json!("#0d1117"));
+        changed = true;
+    }
+    if !appearance.contains_key("blur") {
+        let legacy = appearance
+            .get("backgroundBlur")
+            .and_then(|b| b.as_bool())
+            .unwrap_or(false);
+        appearance.insert("blur".into(), serde_json::json!(if legacy { 24.0 } else { 0.0 }));
+        changed = true;
+    }
+    changed.then(|| serde_json::to_string_pretty(&val).unwrap_or_else(|_| raw.to_string()))
+}
+
+fn migrate_terminal(raw: &str) -> Option<String> {
+    let mut val: serde_json::Value = serde_json::from_str(raw).ok()?;
+    let terminal = val.get_mut("terminal")?.as_object_mut()?;
+    let mut changed = false;
+    if !terminal.contains_key("foreground") {
+        terminal.insert("foreground".into(), serde_json::json!("auto"));
+        changed = true;
+    }
+    changed.then(|| serde_json::to_string_pretty(&val).unwrap_or_else(|_| raw.to_string()))
+}
+
+fn migrate_keybindings(raw: &str) -> Option<String> {
+    let mut val: serde_json::Value = serde_json::from_str(raw).ok()?;
+    let keybindings = val.get_mut("keybindings")?.as_object_mut()?;
+    let mut changed = false;
+
+    if keybindings.get("newTab").and_then(|v| v.as_str()) == Some("ctrl+t") {
+        keybindings.insert("newTab".into(), serde_json::json!("ctrl+shift+t"));
+        changed = true;
+    }
+    if keybindings.get("splitRight").and_then(|v| v.as_str()) == Some("ctrl+\\") {
+        keybindings.insert("splitRight".into(), serde_json::json!("ctrl+t"));
+        changed = true;
+    }
+
+    changed.then(|| serde_json::to_string_pretty(&val).unwrap_or_else(|_| raw.to_string()))
+}
+
 fn ensure_settings(app: &AppHandle) -> Result<PathBuf, String> {
     let path = settings_path(app)?;
     if !path.exists() {
@@ -74,16 +127,26 @@ fn ensure_settings(app: &AppHandle) -> Result<PathBuf, String> {
         return Ok(path);
     }
     if let Ok(raw) = fs::read_to_string(&path) {
+        let mut raw = raw;
         if let Some(retired) = RETIRED_FONT_FAMILIES
             .iter()
             .find(|f| raw.contains(&format!("\"fontFamily\": \"{f}\"")))
         {
-            let patched = raw.replace(
+            raw = raw.replace(
                 &format!("\"fontFamily\": \"{retired}\""),
                 &format!("\"fontFamily\": \"{FONT_FAMILY}\""),
             );
-            fs::write(&path, patched).map_err(|e| e.to_string())?;
         }
+        if let Some(patched) = migrate_appearance(&raw) {
+            raw = patched;
+        }
+        if let Some(patched) = migrate_terminal(&raw) {
+            raw = patched;
+        }
+        if let Some(patched) = migrate_keybindings(&raw) {
+            raw = patched;
+        }
+        fs::write(&path, &raw).map_err(|e| e.to_string())?;
     }
     Ok(path)
 }

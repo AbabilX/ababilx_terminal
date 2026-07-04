@@ -19,3 +19,7 @@ export const THEMES: Record<string, ITheme> = {
 export function resolveTheme(name: string): ITheme {
   return THEMES[name] ?? THEMES.dark;
 }
+
+export function themeBackground(name: string): string {
+  return resolveTheme(name).background ?? THEMES.dark.background!;
+}
