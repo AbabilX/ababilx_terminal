@@ -1,5 +1,7 @@
 import type { LsPicker } from "./lsPicker";
+import { findAlias } from "../lib/aliases";
 import { writeToSession } from "../lib/tauri";
+import { useSettingsStore } from "../store/settings";
 
 export interface InputContext {
   sessionId: string;
@@ -49,6 +51,14 @@ export function routeInput(ctx: InputContext, data: string) {
       picker.resetLine();
       if (m[1]) preview.open(m[1]);
       else preview.showUsage();
+      return;
+    }
+
+    const alias = line ? findAlias(useSettingsStore.getState().settings.aliases, line) : undefined;
+    if (alias) {
+      writeToSession(sessionId, "\x15"); // clear typed alias from shell line
+      picker.resetLine();
+      writeToSession(sessionId, alias.func.trim() + "\r");
       return;
     }
   }

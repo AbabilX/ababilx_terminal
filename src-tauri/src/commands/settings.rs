@@ -27,7 +27,8 @@ const DEFAULT_SETTINGS: &str = r##"{
     "splitRight": "ctrl+t",
     "closeTab": "ctrl+w",
     "settings": "ctrl+,"
-  }
+  },
+  "aliases": []
 }
 "##;
 
@@ -103,6 +104,64 @@ fn migrate_terminal(raw: &str) -> Option<String> {
     changed.then(|| serde_json::to_string_pretty(&val).unwrap_or_else(|_| raw.to_string()))
 }
 
+fn migrate_aliases(raw: &str) -> Option<String> {
+    let mut val: serde_json::Value = serde_json::from_str(raw).ok()?;
+    if val.get("aliases").is_some() {
+        return None;
+    }
+    val.as_object_mut()?.insert("aliases".into(), serde_json::json!([]));
+    Some(serde_json::to_string_pretty(&val).unwrap_or_else(|_| raw.to_string()))
+}
+
+/// First version: alias functions must be `cd <path>` only.
+fn is_cd_alias(func: &str) -> bool {
+    let trimmed = func.trim();
+    if !trimmed.to_ascii_lowercase().starts_with("cd ") {
+        return false;
+    }
+    let rest = trimmed[3..].trim();
+    !rest.is_empty()
+}
+
+fn validate_aliases(val: &serde_json::Value) -> Result<(), String> {
+    let Some(arr) = val.get("aliases").and_then(|a| a.as_array()) else {
+        return Ok(());
+    };
+    let mut names = std::collections::HashSet::new();
+    for item in arr {
+        let name = item
+            .get("name")
+            .and_then(|n| n.as_str())
+            .ok_or_else(|| "alias missing name".to_string())?
+            .trim();
+        let func = item
+            .get("func")
+            .and_then(|f| f.as_str())
+            .ok_or_else(|| format!("alias '{name}' missing func"))?;
+        if name.is_empty() {
+            return Err("alias name cannot be empty".into());
+        }
+        if !names.insert(name.to_string()) {
+            return Err(format!("duplicate alias name: {name}"));
+        }
+        if !is_cd_alias(func) {
+            return Err(format!(
+                "alias '{name}': func must be a cd command (e.g. cd /path)"
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_settings(val: &serde_json::Value) -> Result<(), String> {
+    for key in ["appearance", "terminal", "keybindings"] {
+        if !val.get(key).map(|v| v.is_object()).unwrap_or(false) {
+            return Err(format!("settings missing or invalid '{key}'"));
+        }
+    }
+    validate_aliases(val)
+}
+
 fn migrate_keybindings(raw: &str) -> Option<String> {
     let mut val: serde_json::Value = serde_json::from_str(raw).ok()?;
     let keybindings = val.get_mut("keybindings")?.as_object_mut()?;
@@ -144,6 +203,9 @@ fn ensure_settings(app: &AppHandle) -> Result<PathBuf, String> {
             raw = patched;
         }
         if let Some(patched) = migrate_keybindings(&raw) {
+            raw = patched;
+        }
+        if let Some(patched) = migrate_aliases(&raw) {
             raw = patched;
         }
         fs::write(&path, &raw).map_err(|e| e.to_string())?;
@@ -249,4 +311,15 @@ pub fn read_settings(app: AppHandle) -> Result<String, String> {
 pub fn open_settings(app: AppHandle) -> Result<(), String> {
     let path = ensure_settings(&app)?;
     tauri_plugin_opener::open_path(path, None::<&str>).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn write_settings(app: AppHandle, content: String) -> Result<(), String> {
+    let val: serde_json::Value =
+        serde_json::from_str(&content).map_err(|e| format!("invalid JSON: {e}"))?;
+    validate_settings(&val)?;
+
+    let path = ensure_settings(&app)?;
+    let pretty = serde_json::to_string_pretty(&val).map_err(|e| e.to_string())?;
+    fs::write(&path, pretty).map_err(|e| e.to_string())
 }

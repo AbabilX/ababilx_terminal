@@ -2,10 +2,12 @@ import { useEffect, type CSSProperties } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { AppHeader } from "./components/AppHeader";
+import { SettingsPage } from "./components/settings";
 import { Terminal } from "./components/terminal";
 import { matchesKeybind } from "./lib/keybinds";
 import { hexToRgba } from "./lib/color";
-import { openSettingsFile, useSettingsStore } from "./store/settings";
+import { useSettingsStore } from "./store/settings";
+import { useUiStore } from "./store/ui";
 import { useTerminalStore } from "./store/terminal";
 
 const SETTINGS_REFRESH_MS = 750;
@@ -15,6 +17,8 @@ function App() {
   const loadSettings = useSettingsStore((s) => s.load);
   const settingsLoaded = useSettingsStore((s) => s.loaded);
   const appearance = useSettingsStore((s) => s.settings.appearance);
+  const settingsOpen = useUiStore((s) => s.settingsOpen);
+  const closeSettings = useUiStore((s) => s.closeSettings);
   const appBackground = hexToRgba(appearance.background, appearance.opacity);
   const appStyle: CSSProperties & { "--app-background": string } = {
     "--app-background": appBackground,
@@ -50,7 +54,7 @@ function App() {
         if (store.activeId) store.closeTab(store.activeId);
       } else if (matchesKeybind(e, keybindings.settings)) {
         e.preventDefault();
-        openSettingsFile();
+        useUiStore.getState().toggleSettings();
       }
     };
 
@@ -63,27 +67,32 @@ function App() {
       className="flex h-screen w-screen flex-col overflow-hidden rounded-xl border border-white/10"
       style={appStyle}
     >
-      <AppHeader />
+      {!settingsOpen && <AppHeader />}
       <div className="relative min-h-0 flex-1 bg-[var(--app-background)]">
-        {settingsLoaded && tabs.map((tab) => (
-          <div
-            key={tab.id}
-            className={`absolute inset-0 flex ${
-              tab.id === activeId ? "visible" : "invisible"
-            }`}
-          >
-            {tab.panes.map((paneId, i) => (
-              <div
-                key={paneId}
-                className={`min-w-0 flex-1 p-2 ${
-                  i > 0 ? "border-l border-white/10" : ""
-                }`}
-              >
-                <Terminal sessionId={paneId} visible={tab.id === activeId} />
-              </div>
-            ))}
-          </div>
-        ))}
+        {settingsOpen ? (
+          <SettingsPage onClose={closeSettings} />
+        ) : (
+          settingsLoaded &&
+          tabs.map((tab) => (
+            <div
+              key={tab.id}
+              className={`absolute inset-0 flex ${
+                tab.id === activeId ? "visible" : "invisible"
+              }`}
+            >
+              {tab.panes.map((paneId, i) => (
+                <div
+                  key={paneId}
+                  className={`min-w-0 flex-1 p-2 ${
+                    i > 0 ? "border-l border-white/10" : ""
+                  }`}
+                >
+                  <Terminal sessionId={paneId} visible={tab.id === activeId} />
+                </div>
+              ))}
+            </div>
+          ))
+        )}
       </div>
     </main>
   );

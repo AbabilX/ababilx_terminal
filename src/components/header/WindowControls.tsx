@@ -8,24 +8,34 @@ import {
   Settings02Icon,
 } from "@hugeicons/core-free-icons";
 
-import { openSettingsFile } from "../../store/settings";
+import { useUiStore } from "../../store/ui";
 
 const win = getCurrentWindow();
 
 const buttonClass =
   "flex h-7 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-white/[0.06] hover:text-white";
 
-export function WindowControls() {
+interface WindowControlsProps {
+  showSettingsButton?: boolean;
+}
+
+export function WindowControls({ showSettingsButton = true }: WindowControlsProps) {
+  const openSettings = useUiStore((s) => s.openSettings);
+
   return (
     <div className="flex shrink-0 items-center gap-0.5">
-      <button
-        className={`${buttonClass} text-gray-500 hover:text-gray-200`}
-        onClick={() => openSettingsFile()}
-        aria-label="Settings"
-      >
-        <HugeiconsIcon icon={Settings02Icon} size={15} strokeWidth={2} />
-      </button>
-      <div className="mx-1 h-4 w-px bg-white/10" />
+      {showSettingsButton && (
+        <>
+          <button
+            className={`${buttonClass} text-gray-500 hover:text-gray-200`}
+            onClick={() => openSettings()}
+            aria-label="Settings"
+          >
+            <HugeiconsIcon icon={Settings02Icon} size={15} strokeWidth={2} />
+          </button>
+          <div className="mx-1 h-4 w-px bg-white/10" />
+        </>
+      )}
       <button
         className={buttonClass}
         onClick={() => win.minimize()}

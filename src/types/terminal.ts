@@ -12,6 +12,16 @@ export interface Keybindings {
   settings: string;
 }
 
+export interface AliasItem {
+  name: string;
+  func: string;
+}
+
+export interface ShellSettings {
+  program: string;
+  args: string[];
+}
+
 export interface AppearanceSettings {
   theme: string;
   /** Window background as a hex code, e.g. "#0d1117". */
@@ -36,6 +46,7 @@ export interface AppSettings {
   appearance: AppearanceSettings;
   terminal: TerminalSettings;
   keybindings: Keybindings;
+  aliases: AliasItem[];
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -59,4 +70,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
     closeTab: "ctrl+w",
     settings: "ctrl+,",
   },
+  aliases: [],
 };
