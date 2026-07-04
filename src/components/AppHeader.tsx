@@ -1,11 +1,12 @@
 import { useState } from "react";
 
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Add01Icon } from "@hugeicons/core-free-icons";
+import { Add01Icon, Settings02Icon } from "@hugeicons/core-free-icons";
 
 import { TabItem } from "./header/TabItem";
 import { WindowControls } from "./header/WindowControls";
 import { useTerminalStore } from "../store/terminal";
+import { useUiStore } from "../store/ui";
 
 export function AppHeader() {
   const {
@@ -20,12 +21,14 @@ export function AppHeader() {
     dropTabOnPane,
   } = useTerminalStore();
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const openSettings = useUiStore((s) => s.openSettings);
 
   return (
     <div
       data-tauri-drag-region
-      className="flex h-10 shrink-0 items-center gap-1 border-b border-white/[0.06] px-2"
+      className="flex h-10 shrink-0 items-center gap-2 border-b border-white/[0.06] px-3"
     >
+      <WindowControls />
       <div
         data-tauri-drag-region
         className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-1.5"
@@ -64,7 +67,13 @@ export function AppHeader() {
           <HugeiconsIcon icon={Add01Icon} size={14} strokeWidth={2} />
         </button>
       </div>
-      <WindowControls />
+      <button
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-white/[0.06] hover:text-gray-200"
+        onClick={() => openSettings()}
+        aria-label="Settings"
+      >
+        <HugeiconsIcon icon={Settings02Icon} size={15} strokeWidth={2} />
+      </button>
     </div>
   );
 }

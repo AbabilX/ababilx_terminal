@@ -110,6 +110,7 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
         className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-4 py-3"
       >
         <div className="flex items-center gap-3">
+          <WindowControls />
           <button
             type="button"
             onClick={onClose}
@@ -129,7 +130,6 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
           >
             Open settings.json
           </button>
-          <WindowControls showSettingsButton={false} />
         </div>
       </header>
 

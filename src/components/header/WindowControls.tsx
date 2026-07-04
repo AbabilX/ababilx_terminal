@@ -5,57 +5,55 @@ import {
   Cancel01Icon,
   Maximize01Icon,
   MinusSignIcon,
-  Settings02Icon,
 } from "@hugeicons/core-free-icons";
-
-import { useUiStore } from "../../store/ui";
 
 const win = getCurrentWindow();
 
-const buttonClass =
-  "flex h-7 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-white/[0.06] hover:text-white";
+const dotClass =
+  "flex h-3 w-3 items-center justify-center rounded-full transition-colors";
+// mac shows the glyph only while the pointer is over the cluster.
+const glyphClass =
+  "text-black/60 opacity-0 transition-opacity group-hover/traffic:opacity-100";
 
-interface WindowControlsProps {
-  showSettingsButton?: boolean;
-}
-
-export function WindowControls({ showSettingsButton = true }: WindowControlsProps) {
-  const openSettings = useUiStore((s) => s.openSettings);
-
+/** macOS-style window controls: red close / yellow minimize / green maximize. */
+export function WindowControls() {
   return (
-    <div className="flex shrink-0 items-center gap-0.5">
-      {showSettingsButton && (
-        <>
-          <button
-            className={`${buttonClass} text-gray-500 hover:text-gray-200`}
-            onClick={() => openSettings()}
-            aria-label="Settings"
-          >
-            <HugeiconsIcon icon={Settings02Icon} size={15} strokeWidth={2} />
-          </button>
-          <div className="mx-1 h-4 w-px bg-white/10" />
-        </>
-      )}
+    <div className="group/traffic flex shrink-0 items-center gap-2">
       <button
-        className={buttonClass}
-        onClick={() => win.minimize()}
-        aria-label="Minimize"
-      >
-        <HugeiconsIcon icon={MinusSignIcon} size={14} strokeWidth={2} />
-      </button>
-      <button
-        className={buttonClass}
-        onClick={() => win.toggleMaximize()}
-        aria-label="Maximize"
-      >
-        <HugeiconsIcon icon={Maximize01Icon} size={13} strokeWidth={2} />
-      </button>
-      <button
-        className="flex h-7 w-8 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-red-500/80 hover:text-white"
+        className={`${dotClass} bg-[#ff5f57] hover:bg-[#ff5f57]`}
         onClick={() => win.close()}
         aria-label="Close"
       >
-        <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={2} />
+        <HugeiconsIcon
+          icon={Cancel01Icon}
+          size={8}
+          strokeWidth={3}
+          className={glyphClass}
+        />
+      </button>
+      <button
+        className={`${dotClass} bg-[#febc2e] hover:bg-[#febc2e]`}
+        onClick={() => win.minimize()}
+        aria-label="Minimize"
+      >
+        <HugeiconsIcon
+          icon={MinusSignIcon}
+          size={8}
+          strokeWidth={3}
+          className={glyphClass}
+        />
+      </button>
+      <button
+        className={`${dotClass} bg-[#28c840] hover:bg-[#28c840]`}
+        onClick={() => win.toggleMaximize()}
+        aria-label="Maximize"
+      >
+        <HugeiconsIcon
+          icon={Maximize01Icon}
+          size={7}
+          strokeWidth={3}
+          className={glyphClass}
+        />
       </button>
     </div>
   );
