@@ -57,19 +57,20 @@ export function routeInput(ctx: InputContext, data: string) {
 
     const alias = line ? findAlias(useSettingsStore.getState().settings.aliases, line) : undefined;
     if (alias) {
-      writeToSession(sessionId, "\x15"); // clear typed alias from shell line
       picker.resetLine();
-      writeToSession(sessionId, alias.func.trim() + "\r");
+      // Kill-line + retype sent as ONE write: two separate invoke() calls
+      // race under Tauri (no cross-call ordering guarantee), which only
+      // shows up once the release build is fast enough to expose it.
+      writeToSession(sessionId, "\x15" + alias.func.trim() + "\r");
       return;
     }
 
     // Plain `ls` → re-issue as `ls -1p` so the picker can number folders only
     // (trailing `/`) and survive spaced names (one entry per line).
     if (line && LsTracker.isPlainLs(line)) {
-      writeToSession(sessionId, "\x15"); // wipe the typed "ls ..." line
       picker.resetLine();
       picker.armLs(); // arm before output arrives
-      writeToSession(sessionId, LsTracker.rewriteWithFlags(line) + "\r");
+      writeToSession(sessionId, "\x15" + LsTracker.rewriteWithFlags(line) + "\r");
       return;
     }
   }

@@ -43,6 +43,19 @@ impl PtySession {
             cmd.cwd(home);
         }
 
+        // A bundled .app launched from Finder inherits macOS's stripped launchd
+        // environment — no TERM, no LANG. Without them the child shell falls
+        // back to a dumb terminal + the C locale, which mangles prompt glyphs
+        // (nerd-font icons, arrows) into `?`. Set sane UTF-8 defaults, but never
+        // clobber values the user already exported.
+        cmd.env("TERM", "xterm-256color");
+        if std::env::var_os("LANG").is_none() {
+            cmd.env("LANG", "en_US.UTF-8");
+        }
+        if std::env::var_os("LC_CTYPE").is_none() && std::env::var_os("LC_ALL").is_none() {
+            cmd.env("LC_CTYPE", "UTF-8");
+        }
+
         let child = pair.slave.spawn_command(cmd)?;
         drop(pair.slave);
 
