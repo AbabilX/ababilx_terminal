@@ -1,4 +1,4 @@
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { AppHeader } from "./components/AppHeader";
@@ -19,6 +19,8 @@ function App() {
   const appearance = useSettingsStore((s) => s.settings.appearance);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const closeSettings = useUiStore((s) => s.closeSettings);
+  const [headerRevealed, setHeaderRevealed] = useState(false);
+  const hideHeader = appearance.hideHeader && !settingsOpen;
   const appBackground = hexToRgba(appearance.background, appearance.opacity);
   const appStyle: CSSProperties & { "--app-background": string } = {
     "--app-background": appBackground,
@@ -67,8 +69,24 @@ function App() {
       className="flex h-screen w-screen flex-col overflow-hidden rounded-xl border border-white/10"
       style={appStyle}
     >
-      {!settingsOpen && <AppHeader />}
+      {!hideHeader && !settingsOpen && <AppHeader />}
       <div className="relative min-h-0 flex-1 bg-[var(--app-background)]">
+        {hideHeader && (
+          <div
+            className="absolute inset-x-0 top-0 z-30"
+            onMouseEnter={() => setHeaderRevealed(true)}
+            onMouseLeave={() => setHeaderRevealed(false)}
+          >
+            <div
+              className={`transition-transform duration-150 ease-out ${
+                headerRevealed ? "translate-y-0" : "-translate-y-full"
+              }`}
+            >
+              <AppHeader />
+            </div>
+            <div className="h-2 w-full" />
+          </div>
+        )}
         {settingsOpen ? (
           <SettingsPage onClose={closeSettings} />
         ) : (

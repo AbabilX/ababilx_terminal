@@ -194,6 +194,20 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
                 step={1}
               />
             </SettingsField>
+            <SettingsField
+              label="Hide header"
+              description="Hide the tab bar; hover the top edge to reveal it"
+            >
+              <ToggleInput
+                checked={draft.appearance.hideHeader}
+                onChange={(hideHeader) =>
+                  patch((s) => ({
+                    ...s,
+                    appearance: { ...s.appearance, hideHeader },
+                  }))
+                }
+              />
+            </SettingsField>
           </Section>
 
           <Section title="Terminal">

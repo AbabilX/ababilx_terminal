@@ -70,6 +70,8 @@ export interface AppearanceSettings {
   opacity: number;
   /** Background blur in px; 0 disables the system blur behind the window. */
   blur: number;
+  /** When true, the tab/title bar stays hidden until the mouse hovers near the top. */
+  hideHeader: boolean;
 }
 
 export interface TerminalSettings {
@@ -95,6 +97,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     background: "#0d1117",
     opacity: 0.94,
     blur: 24,
+    hideHeader: false,
   },
   terminal: {
     fontFamily: "JetBrains Mono, Consolas, monospace, 'Purno Pran Unicode'",
