@@ -1,15 +1,17 @@
 import type { Terminal } from "@xterm/xterm";
 
 import { cellSize } from "./cellSize";
+import { isCdAlias } from "../../lib/aliases";
 import { useSettingsStore } from "../../store/settings";
 
 /** Commands handled by the app itself (never reach the shell). */
 export const APP_COMMANDS = ["see"];
 
 /**
- * Paints app commands ("see") yellow on the shell's edit line so the user
- * can tell them apart from real executables. Drawn as an overlay span
- * covering the echoed glyphs, positioned from the prompt column/row.
+ * Paints app commands ("see", plus any cd-alias) yellow on the shell's edit
+ * line so the user can tell them apart from real executables. Drawn as an
+ * overlay span covering the echoed glyphs, positioned from the prompt
+ * column/row.
  */
 export class CmdHighlight {
   private el: HTMLSpanElement | null = null;
@@ -20,7 +22,11 @@ export class CmdHighlight {
   ) {}
 
   update(line: string | null, promptCol: number | null, promptRow: number) {
-    const word = APP_COMMANDS.find(
+    const aliasNames = useSettingsStore
+      .getState()
+      .settings.aliases.filter((a) => isCdAlias(a.func))
+      .map((a) => a.name);
+    const word = [...APP_COMMANDS, ...aliasNames].find(
       (c) => line !== null && (line === c || line.startsWith(c + " ")),
     );
     if (!word || promptCol === null) {
