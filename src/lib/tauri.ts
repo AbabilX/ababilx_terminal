@@ -19,3 +19,14 @@ export async function resizeSession(id: string, cols: number, rows: number) {
 export async function closeSession(id: string) {
   return invoke<void>("close_session", { id });
 }
+
+export interface PreviewFile {
+  kind: "image" | "video" | "pdf";
+  mime: string;
+  name: string;
+  base64: string;
+}
+
+export async function readPreviewFile(id: string, path: string) {
+  return invoke<PreviewFile>("read_preview_file", { id, path });
+}

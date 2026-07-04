@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -8,9 +8,11 @@ import { listen } from "@tauri-apps/api/event";
 import {
   closeSession,
   createSession,
+  readPreviewFile,
   resizeSession,
   writeToSession,
 } from "../../lib/tauri";
+import { PreviewDialog, type PreviewState } from "./PreviewDialog";
 import { matchesKeybind } from "../../lib/keybinds";
 import { resolveTheme } from "../../lib/themes";
 import { LsPicker } from "../../terminal/lsPicker";
@@ -33,6 +35,40 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
+
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+  const previewRef = useRef<PreviewState | null>(null);
+  previewRef.current = preview;
+
+  const closePreview = () => {
+    setPreview((p) => {
+      if (p?.url) URL.revokeObjectURL(p.url);
+      return null;
+    });
+    terminalRef.current?.focus();
+  };
+
+  const openPreview = async (rawArg: string) => {
+    const arg = rawArg.trim().replace(/^(['"])(.*)\1$/, "$2");
+    setPreview({ name: arg, loading: true });
+    try {
+      const file = await readPreviewFile(sessionId, arg);
+      const blob = await (
+        await fetch(`data:${file.mime};base64,${file.base64}`)
+      ).blob();
+      const url = URL.createObjectURL(blob);
+      // Only apply if the dialog wasn't closed while loading.
+      setPreview((p) => {
+        if (!p) {
+          URL.revokeObjectURL(url);
+          return p;
+        }
+        return { name: file.name, kind: file.kind, url };
+      });
+    } catch (err) {
+      setPreview((p) => (p ? { name: arg, error: String(err) } : p));
+    }
+  };
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -70,6 +106,11 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
     const picker = new LsPicker(terminal, containerRef.current);
 
     terminal.onData((data) => {
+      // While the preview dialog is open, swallow all input; Esc closes it.
+      if (previewRef.current) {
+        if (data === "\x1b") closePreview();
+        return;
+      }
       if (picker.active) {
         if (/^[0-9]$/.test(data)) {
           picker.select(Number(data)); // consumed; not sent to the shell
@@ -87,6 +128,20 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
           }
         }
         picker.dismiss();
+      }
+      if (data === "\r") {
+        const line = picker.line?.trim();
+        const m = line?.match(/^see(?:\s+(.+))?$/);
+        if (m) {
+          writeToSession(sessionId, "\x15"); // wipe the typed line from the shell
+          picker.resetLine();
+          if (m[1]) {
+            openPreview(m[1]);
+          } else {
+            setPreview({ name: "see", error: "usage: see <file>" });
+          }
+          return;
+        }
       }
       picker.noteInput(data);
       writeToSession(sessionId, data);
@@ -141,10 +196,13 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
   }, [visible]);
 
   return (
-    <div
-      ref={containerRef}
-      className="relative h-full w-full overflow-hidden"
-      onClick={() => terminalRef.current?.focus()}
-    />
+    <>
+      <div
+        ref={containerRef}
+        className="relative h-full w-full overflow-hidden"
+        onClick={() => terminalRef.current?.focus()}
+      />
+      {preview && <PreviewDialog preview={preview} onClose={closePreview} />}
+    </>
   );
 }

@@ -27,3 +27,4 @@ portable-pty = "0.9"
 anyhow = "1"
 
 ababil-session = { path = "../crates/ababil-session" }
+base64 = "0.22"

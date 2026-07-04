@@ -98,6 +98,11 @@ impl PtySession {
     pub fn kill(&self) {
         let _ = self.child.lock().unwrap().kill();
     }
+
+    /// OS pid of the shell process, used to resolve its current directory.
+    pub fn pid(&self) -> Option<u32> {
+        self.child.lock().unwrap().process_id()
+    }
 }
 
 fn default_shell() -> String {

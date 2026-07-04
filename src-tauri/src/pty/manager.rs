@@ -33,6 +33,10 @@ impl PtyManager {
         }
     }
 
+    pub fn session_pid(&self, id: &str) -> Option<u32> {
+        self.sessions.lock().unwrap().get(id).and_then(|s| s.pid())
+    }
+
     pub fn close(&self, id: &str) {
         if let Some(session) = self.sessions.lock().unwrap().remove(id) {
             session.kill();

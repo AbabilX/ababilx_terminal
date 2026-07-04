@@ -11,6 +11,9 @@ interface LsEntry {
 const MAX_NUMBERED = 10;
 const SETTLE_MS = 200;
 
+/** Commands handled by the app itself (never reach the shell). */
+const APP_COMMANDS = ["see"];
+
 /**
  * Watches for a plain `ls` command and, once its output settles, overlays a
  * gray index (0-9) beside the first ten entries. Pressing that digit while
@@ -25,10 +28,16 @@ export class LsPicker {
   private selected = -1;
   /** Mirror of the shell's edit buffer; null once we lose track of it. */
   private inputLine: string | null = "";
+  /** Column where the typed text starts (prompt end), captured at the
+   * first keystroke of each line; null before typing starts. */
+  private promptCol: number | null = null;
+  /** Absolute buffer row of the line being typed. */
+  private promptRow = 0;
   private awaiting = false;
   private startRow = 0;
   private settleTimer: number | undefined;
   private overlay: HTMLDivElement | null = null;
+  private cmdOverlay: HTMLSpanElement | null = null;
   private scrollSub: IDisposable;
 
   constructor(
@@ -40,9 +49,33 @@ export class LsPicker {
     });
   }
 
+  /**
+   * The shell's current edit line. Prefers the keystroke mirror (exact even
+   * before echo lands); falls back to reading the terminal buffer when the
+   * mirror lost track (tab completion, history arrows), since by then the
+   * shell has already rendered the real line.
+   */
+  get line(): string | null {
+    return this.inputLine !== null ? this.inputLine : this.lineFromBuffer();
+  }
+
+  /** Call after clearing the shell's edit line (e.g. sending ^U). */
+  resetLine() {
+    this.inputLine = "";
+    this.promptCol = null;
+    this.updateCommandHighlight();
+  }
+
   /** Feed every input chunk that is about to be sent to the shell. */
   noteInput(data: string) {
     for (const ch of data) {
+      // First keystroke of a line: the echo hasn't landed yet, so the
+      // cursor still sits at the end of the prompt — remember where.
+      if (this.promptCol === null && ch !== "\r" && ch !== "\n") {
+        const buf = this.term.buffer.active;
+        this.promptCol = buf.cursorX;
+        this.promptRow = buf.baseY + buf.cursorY;
+      }
       if (ch === "\r" || ch === "\n") {
         this.onEnter();
       } else if (ch === "\x7f" || ch === "\b") {
@@ -50,8 +83,8 @@ export class LsPicker {
           this.inputLine = this.inputLine.slice(0, -1);
         }
       } else if (ch < " ") {
-        // Escape sequences and control chars (arrows, history, ^C…) mean the
-        // shell's line no longer matches what we saw typed — stop tracking.
+        // Control chars / escapes (tab completion, arrows, ^C…): the mirror
+        // no longer matches the shell's line; the buffer fallback takes over.
         this.inputLine = null;
       } else if (this.inputLine !== null) {
         this.inputLine += ch;
@@ -59,8 +92,26 @@ export class LsPicker {
     }
   }
 
+  /** Reads the line being edited straight from the terminal buffer. */
+  private lineFromBuffer(): string | null {
+    if (this.promptCol === null) return null;
+    const buf = this.term.buffer.active;
+    const first = buf.getLine(this.promptRow);
+    if (!first) return null;
+    let text = first.translateToString(true);
+    for (let row = this.promptRow + 1; row < buf.length; row++) {
+      const l = buf.getLine(row);
+      if (!l || !l.isWrapped) break;
+      text += l.translateToString(true);
+    }
+    return text.slice(this.promptCol);
+  }
+
   /** Call after each PTY chunk has been written to the terminal buffer. */
   noteOutput() {
+    // Echo of the user's keystrokes just landed: cursor position is now
+    // accurate, so (re)paint the app-command highlight.
+    this.updateCommandHighlight();
     if (this.active) {
       // New output underneath would misalign the overlay.
       this.dismiss();
@@ -106,12 +157,61 @@ export class LsPicker {
 
   dispose() {
     this.dismiss();
+    this.cmdOverlay?.remove();
+    this.cmdOverlay = null;
     this.scrollSub.dispose();
   }
 
+  /**
+   * Paints app commands ("see") yellow on the shell's edit line so the user
+   * can tell them apart from real executables. Drawn as an overlay span
+   * covering the echoed glyphs; positioned from the cursor, which sits right
+   * after the typed text.
+   */
+  private updateCommandHighlight() {
+    const line = this.line;
+    const word = APP_COMMANDS.find(
+      (c) => line !== null && (line === c || line.startsWith(c + " ")),
+    );
+    if (!word || this.promptCol === null) {
+      this.cmdOverlay?.remove();
+      this.cmdOverlay = null;
+      return;
+    }
+
+    const buf = this.term.buffer.active;
+    const col = this.promptCol;
+    const viewRow = this.promptRow - buf.viewportY;
+    if (viewRow < 0 || viewRow >= this.term.rows) {
+      // Scrolled out of view; skip rather than misplace it.
+      this.cmdOverlay?.remove();
+      this.cmdOverlay = null;
+      return;
+    }
+
+    const { w, h } = this.cellSize();
+    if (!this.cmdOverlay) {
+      this.cmdOverlay = document.createElement("span");
+      this.cmdOverlay.style.cssText =
+        "position:absolute;z-index:9;pointer-events:none;white-space:pre;";
+      this.host.appendChild(this.cmdOverlay);
+    }
+    const o = this.cmdOverlay.style;
+    o.left = `${col * w}px`;
+    o.top = `${viewRow * h}px`;
+    o.height = `${h}px`;
+    o.lineHeight = `${h}px`;
+    o.fontSize = `${this.term.options.fontSize ?? 14}px`;
+    o.fontFamily = this.term.options.fontFamily ?? "monospace";
+    o.color = "#e3b341";
+    o.background = this.term.options.theme?.background ?? "#0d1117";
+    this.cmdOverlay.textContent = word;
+  }
+
   private onEnter() {
-    const line = this.inputLine;
+    const line = this.line;
     this.inputLine = "";
+    this.promptCol = null;
     this.dismiss();
     if (line === null) return;
     const tokens = line.trim().split(/\s+/).filter(Boolean);
