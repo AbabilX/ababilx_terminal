@@ -44,7 +44,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     blur: 24,
   },
   terminal: {
-    fontFamily: "JetBrains Mono, Consolas, monospace",
+    fontFamily: "JetBrains Mono, Consolas, monospace, 'Purno Pran Unicode'",
     fontSize: 14,
     cursorStyle: "block",
     cursorBlink: true,

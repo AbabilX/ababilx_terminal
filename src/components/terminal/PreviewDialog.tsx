@@ -10,9 +10,11 @@ import { PreviewMedia } from "./PreviewMedia";
 
 export interface PreviewState {
   name: string;
-  kind?: "image" | "video" | "pdf";
-  /** Blob URL of the file contents; absent while loading or on error. */
+  kind?: "image" | "video" | "pdf" | "markdown";
+  /** Blob URL of the file contents; images/video/pdf only. */
   url?: string;
+  /** Decoded UTF-8 text; markdown only. */
+  text?: string;
   error?: string;
   loading?: boolean;
 }
@@ -26,16 +28,20 @@ const KIND_ICONS = {
   image: Image01Icon,
   video: Video01Icon,
   pdf: File01Icon,
+  markdown: File01Icon,
 } as const;
 
 export function PreviewDialog({ preview, onClose }: PreviewDialogProps) {
+  const wide = preview.kind === "markdown";
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90vh] max-w-[90vw] flex-col overflow-hidden rounded-xl border border-white/10 bg-[#161b22]/95 shadow-2xl"
+        className={`flex max-h-[90vh] flex-col overflow-hidden rounded-xl border border-white/10 bg-[#161b22]/95 shadow-2xl ${
+          wide ? "w-[70vw] max-w-[900px]" : "max-w-[90vw]"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-4 py-2.5">

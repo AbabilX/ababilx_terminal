@@ -21,7 +21,7 @@ export async function closeSession(id: string) {
 }
 
 export interface PreviewFile {
-  kind: "image" | "video" | "pdf";
+  kind: "image" | "video" | "pdf" | "markdown";
   mime: string;
   name: string;
   base64: string;

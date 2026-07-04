@@ -2,19 +2,12 @@ import { useEffect, useRef } from "react";
 
 import type { Terminal } from "@xterm/xterm";
 import type { FitAddon } from "@xterm/addon-fit";
-import { listen } from "@tauri-apps/api/event";
 
-import { closeSession, createSession, resizeSession } from "../lib/tauri";
 import { createTerminal } from "../terminal/createTerminal";
-import { routeInput, type InputContext } from "../terminal/routeInput";
-import { LsPicker } from "../terminal/lsPicker";
-import { useTerminalStore } from "../store/terminal";
+import { ensureFontsReady } from "../terminal/fonts";
+import { wireTerminal } from "../terminal/wireTerminal";
+import type { InputContext } from "../terminal/routeInput";
 import type { PreviewState } from "../components/terminal/PreviewDialog";
-
-interface PtyOutput {
-  id: string;
-  data: string;
-}
 
 interface UseTerminalSessionArgs {
   sessionId: string;
@@ -23,8 +16,8 @@ interface UseTerminalSessionArgs {
   previewRef: React.RefObject<PreviewState | null>;
 }
 
-/** Spins up the xterm instance + PTY session for one pane and wires input
- * routing, resize, and output. Returns refs the parent can read/focus. */
+/** Spins up the xterm instance + PTY session for one pane, deferred until
+ * the bundled fonts are loaded. Returns refs the parent can read/focus. */
 export function useTerminalSession({
   sessionId,
   containerRef,
@@ -34,54 +27,34 @@ export function useTerminalSession({
   const fitRef = useRef<FitAddon | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
     let disposed = false;
+    let cleanup: (() => void) | undefined;
 
-    const { terminal, fitAddon } = createTerminal();
-    terminal.open(containerRef.current);
-    fitAddon.fit();
-    terminal.focus();
+    // Wait for our bundled webfonts before xterm takes its first cell-size
+    // measurement — otherwise it measures a fallback font and the whole
+    // grid renders at the wrong width.
+    ensureFontsReady().then(() => {
+      if (disposed || !containerRef.current) return;
 
-    const picker = new LsPicker(terminal, containerRef.current);
-    const ctx: InputContext = { sessionId, picker, preview };
-
-    terminal.onData((data) => routeInput(ctx, data));
-    terminal.onResize(({ cols, rows }) => resizeSession(sessionId, cols, rows));
-
-    const unlistenOutput = listen<PtyOutput>("pty-output", (event) => {
-      if (event.payload.id === sessionId) {
-        // noteOutput must run after the chunk lands in the buffer.
-        terminal.write(event.payload.data, () => picker.noteOutput());
-      }
-    });
-
-    const unlistenExit = listen<string>("pty-exit", (event) => {
-      if (event.payload === sessionId && !disposed) {
-        useTerminalStore.getState().closePane(sessionId);
-      }
-    });
-
-    createSession(sessionId, terminal.cols, terminal.rows).catch((err) => {
-      terminal.writeln(`\x1b[31mFailed to start shell: ${err}\x1b[0m`);
-    });
-
-    const resizeObserver = new ResizeObserver(() => {
-      picker.dismiss(); // reflow shifts text under the overlay
+      const { terminal, fitAddon } = createTerminal();
+      terminal.open(containerRef.current);
       fitAddon.fit();
-    });
-    resizeObserver.observe(containerRef.current);
+      terminal.focus();
 
-    terminalRef.current = terminal;
-    fitRef.current = fitAddon;
+      cleanup = wireTerminal(
+        terminal,
+        fitAddon,
+        containerRef.current,
+        sessionId,
+        preview,
+      );
+      terminalRef.current = terminal;
+      fitRef.current = fitAddon;
+    });
 
     return () => {
       disposed = true;
-      resizeObserver.disconnect();
-      unlistenOutput.then((fn) => fn());
-      unlistenExit.then((fn) => fn());
-      closeSession(sessionId);
-      picker.dispose();
-      terminal.dispose();
+      cleanup?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);

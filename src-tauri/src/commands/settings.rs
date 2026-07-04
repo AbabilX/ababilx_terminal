@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS: &str = r##"{
     "blur": 24
   },
   "terminal": {
-    "fontFamily": "JetBrains Mono, Consolas, monospace",
+    "fontFamily": "JetBrains Mono, Consolas, monospace, 'Purno Pran Unicode'",
     "fontSize": 14,
     "cursorStyle": "block",
     "cursorBlink": true,
@@ -52,10 +52,38 @@ fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir.join("settings.json"))
 }
 
+const LEGACY_FONT_FAMILY: &str = "JetBrains Mono, Consolas, monospace";
+const FONT_FAMILY: &str = "JetBrains Mono, Consolas, monospace, 'Purno Pran Unicode'";
+
+/// Old `terminal.fontFamily` values from before/during the bangla font
+/// bundle; migrated to `FONT_FAMILY` verbatim (exact match only — these
+/// must never overlap as substrings of each other or of `FONT_FAMILY`,
+/// otherwise repeated migration passes compound instead of settling).
+const RETIRED_FONT_FAMILIES: [&str; 2] = [
+    LEGACY_FONT_FAMILY,
+    // Short-lived build: bangla fallback listed 2nd, so browsers without
+    // "JetBrains Mono" installed skipped straight to it for every
+    // character, not just bangla.
+    "JetBrains Mono, 'Purno Pran Unicode', Consolas, monospace",
+];
+
 fn ensure_settings(app: &AppHandle) -> Result<PathBuf, String> {
     let path = settings_path(app)?;
     if !path.exists() {
         fs::write(&path, default_settings()).map_err(|e| e.to_string())?;
+        return Ok(path);
+    }
+    if let Ok(raw) = fs::read_to_string(&path) {
+        if let Some(retired) = RETIRED_FONT_FAMILIES
+            .iter()
+            .find(|f| raw.contains(&format!("\"fontFamily\": \"{f}\"")))
+        {
+            let patched = raw.replace(
+                &format!("\"fontFamily\": \"{retired}\""),
+                &format!("\"fontFamily\": \"{FONT_FAMILY}\""),
+            );
+            fs::write(&path, patched).map_err(|e| e.to_string())?;
+        }
     }
     Ok(path)
 }

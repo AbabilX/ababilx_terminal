@@ -1,9 +1,10 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Alert02Icon, Loading03Icon } from "@hugeicons/core-free-icons";
 
+import { MarkdownPreview } from "./MarkdownPreview";
 import type { PreviewState } from "./PreviewDialog";
 
-/** Body of the preview dialog: loading / error / image / video / pdf. */
+/** Body of the preview dialog: loading / error / image / video / pdf / markdown. */
 export function PreviewMedia({ preview }: { preview: PreviewState }) {
   return (
     <div className="flex min-h-24 min-w-64 items-center justify-center overflow-auto">
@@ -50,6 +51,9 @@ export function PreviewMedia({ preview }: { preview: PreviewState }) {
           type="application/pdf"
           className="h-[80vh] w-[75vw]"
         />
+      )}
+      {preview.text !== undefined && preview.kind === "markdown" && (
+        <MarkdownPreview text={preview.text} />
       )}
     </div>
   );

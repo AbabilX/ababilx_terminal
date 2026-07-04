@@ -22,6 +22,12 @@ export function usePreview(sessionId: string, refocus: () => void) {
     setPreview({ name: arg, loading: true });
     try {
       const file = await readPreviewFile(sessionId, arg);
+      if (file.kind === "markdown") {
+        const bytes = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0));
+        const text = new TextDecoder("utf-8").decode(bytes);
+        setPreview((p) => (p ? { name: file.name, kind: file.kind, text } : p));
+        return;
+      }
       const blob = await (
         await fetch(`data:${file.mime};base64,${file.base64}`)
       ).blob();

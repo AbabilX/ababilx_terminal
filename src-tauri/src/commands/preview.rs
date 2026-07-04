@@ -1,6 +1,6 @@
 //! Backing for the frontend `see <file>` command: resolves the file against
 //! the session shell's current directory and returns its bytes for an
-//! in-app preview dialog (images, video, pdf).
+//! in-app preview dialog (images, video, pdf, markdown).
 
 use std::fs;
 use std::path::PathBuf;
@@ -35,6 +35,7 @@ fn kind_for(ext: &str) -> Option<(&'static str, &'static str)> {
         "mov" => ("video", "video/quicktime"),
         "webm" => ("video", "video/webm"),
         "pdf" => ("pdf", "application/pdf"),
+        "md" | "markdown" => ("markdown", "text/markdown"),
         _ => return None,
     })
 }
@@ -99,8 +100,9 @@ pub fn read_preview_file(
         .and_then(|e| e.to_str())
         .map(|e| e.to_ascii_lowercase())
         .unwrap_or_default();
-    let (kind, mime) = kind_for(&ext)
-        .ok_or_else(|| format!("unsupported type: .{ext} (images, video and pdf only)"))?;
+    let (kind, mime) = kind_for(&ext).ok_or_else(|| {
+        format!("unsupported type: .{ext} (images, video, pdf and markdown only)")
+    })?;
 
     let meta = fs::metadata(&resolved).map_err(|e| format!("{}: {e}", resolved.display()))?;
     if !meta.is_file() {
