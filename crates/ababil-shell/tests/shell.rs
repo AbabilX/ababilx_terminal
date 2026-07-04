@@ -194,3 +194,52 @@ fn external_command_pipeline() {
     assert_eq!(status, 0);
     assert!(out.contains("hello"));
 }
+
+#[test]
+fn file_builtins_cat_mkdir_touch_cp_mv_rm() {
+    let dir = temp_dir("filecmds");
+    let mut s = session_at(&dir);
+
+    // touch creates an empty file; cat reads it back after echo-redirect.
+    let (status, _, _) = eval(&mut s, "touch a.txt");
+    assert_eq!(status, 0);
+    assert!(dir.join("a.txt").exists());
+
+    let (status, _, _) = eval(&mut s, "echo hello > a.txt");
+    assert_eq!(status, 0);
+    let (status, out, _) = eval(&mut s, "cat a.txt");
+    assert_eq!(status, 0);
+    assert!(out.contains("hello"));
+
+    // mkdir + cp into a directory, then verify the copy landed.
+    let (status, _, _) = eval(&mut s, "mkdir sub");
+    assert_eq!(status, 0);
+    assert!(dir.join("sub").is_dir());
+
+    let (status, _, _) = eval(&mut s, "cp a.txt sub");
+    assert_eq!(status, 0);
+    assert!(dir.join("sub/a.txt").exists());
+
+    // mv renames within the tree.
+    let (status, _, _) = eval(&mut s, "mv a.txt b.txt");
+    assert_eq!(status, 0);
+    assert!(!dir.join("a.txt").exists());
+    assert!(dir.join("b.txt").exists());
+
+    // rm on a directory without -r fails; with -r it succeeds.
+    let (status, _, err) = eval(&mut s, "rm sub");
+    assert_eq!(status, 1);
+    assert!(err.contains("directory"));
+    let (status, _, _) = eval(&mut s, "rm -r sub");
+    assert_eq!(status, 0);
+    assert!(!dir.join("sub").exists());
+
+    // cp -r copies a whole tree.
+    let (status, _, _) = eval(&mut s, "mkdir tree");
+    assert_eq!(status, 0);
+    let (status, _, _) = eval(&mut s, "touch tree/inner.txt");
+    assert_eq!(status, 0);
+    let (status, _, _) = eval(&mut s, "cp -r tree tree-copy");
+    assert_eq!(status, 0);
+    assert!(dir.join("tree-copy/inner.txt").exists());
+}

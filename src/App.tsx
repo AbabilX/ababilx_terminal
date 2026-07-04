@@ -10,8 +10,6 @@ import { useSettingsStore } from "./store/settings";
 import { useUiStore } from "./store/ui";
 import { useTerminalStore } from "./store/terminal";
 
-const SETTINGS_REFRESH_MS = 750;
-
 function App() {
   const { tabs } = useTerminalStore();
   const loadSettings = useSettingsStore((s) => s.load);
@@ -27,10 +25,17 @@ function App() {
     background: appBackground,
   };
 
+  // Load settings once, then refresh only when the window regains focus
+  // (picks up external edits to settings.json). No idle polling — saves in the
+  // app already update the store directly.
   useEffect(() => {
     loadSettings();
-    const id = window.setInterval(loadSettings, SETTINGS_REFRESH_MS);
-    return () => window.clearInterval(id);
+    const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+      if (focused) loadSettings();
+    });
+    return () => {
+      unlisten.then((off) => off());
+    };
   }, [loadSettings]);
 
   // Close the window when the last tab is gone.

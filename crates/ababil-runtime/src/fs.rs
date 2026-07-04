@@ -59,6 +59,10 @@ impl FileSystem for RealFs {
         }
     }
 
+    fn rename(&self, from: &Path, to: &Path) -> io::Result<()> {
+        fs::rename(from, to)
+    }
+
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf> {
         let p = fs::canonicalize(path)?;
         // Strip Windows `\\?\` verbatim prefix for display-friendly paths.

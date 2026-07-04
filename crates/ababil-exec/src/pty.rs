@@ -218,12 +218,14 @@ impl ProcessLauncher for PtyLauncher {
                 }
             }
 
-            if exited_quiet.is_none() {
-                if let Ok(Some(_)) = child.try_wait() {
-                    exited_quiet = Some(std::time::Instant::now());
+            match exited_quiet {
+                None => {
+                    if let Ok(Some(_)) = child.try_wait() {
+                        exited_quiet = Some(std::time::Instant::now());
+                    }
                 }
-            } else if exited_quiet.unwrap().elapsed() > Duration::from_millis(150) {
-                break;
+                Some(since) if since.elapsed() > Duration::from_millis(150) => break,
+                Some(_) => {}
             }
         }
 

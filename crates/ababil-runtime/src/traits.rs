@@ -20,6 +20,9 @@ pub trait FileSystem: Send + Sync {
     fn metadata(&self, path: &Path) -> io::Result<FileMeta>;
     fn create_dir(&self, path: &Path) -> io::Result<()>;
     fn remove(&self, path: &Path) -> io::Result<()>;
+    /// Rename/move a path. May fail across filesystems (EXDEV); callers that
+    /// need cross-device moves fall back to copy+remove.
+    fn rename(&self, from: &Path, to: &Path) -> io::Result<()>;
     fn canonicalize(&self, path: &Path) -> io::Result<PathBuf>;
     fn exists(&self, path: &Path) -> bool;
 }

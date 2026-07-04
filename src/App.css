@@ -40,3 +40,14 @@ body {
 .xterm-screen {
   background-color: transparent !important;
 }
+
+/* Hide the terminal scrollbar (still scrollable via wheel/keys). */
+.xterm-viewport {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge */
+}
+.xterm-viewport::-webkit-scrollbar {
+  display: none; /* Chromium/WebKit — the Tauri webview */
+  width: 0;
+  height: 0;
+}

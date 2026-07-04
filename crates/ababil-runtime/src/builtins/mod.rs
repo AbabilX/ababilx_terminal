@@ -2,6 +2,7 @@
 //! shelling out.
 
 mod env;
+mod files;
 mod misc;
 mod nav;
 
@@ -54,6 +55,12 @@ impl BuiltinRegistry {
             Box::new(nav::Pwd) as Box<dyn Builtin>,
             Box::new(nav::Cd),
             Box::new(nav::Ls),
+            Box::new(files::Cat),
+            Box::new(files::Mkdir),
+            Box::new(files::Touch),
+            Box::new(files::Rm),
+            Box::new(files::Cp),
+            Box::new(files::Mv),
             Box::new(env::Export),
             Box::new(env::Alias),
             Box::new(env::Unalias),

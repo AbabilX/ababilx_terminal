@@ -1,7 +1,7 @@
 //! Executable resolution against the session's own PATH (not the OS
 //! process's). Used by `which` and by launchers that want explicit paths.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::state::ShellState;
 use crate::traits::FileSystem;
@@ -25,23 +25,23 @@ pub fn find_executable(name: &str, state: &ShellState, fs: &dyn FileSystem) -> O
     None
 }
 
-fn candidates(base: &PathBuf) -> Vec<PathBuf> {
+fn candidates(base: &Path) -> Vec<PathBuf> {
     if cfg!(windows) {
         let has_ext = base.extension().is_some();
         let mut v = Vec::new();
         if has_ext {
-            v.push(base.clone());
+            v.push(base.to_path_buf());
         }
         for ext in ["exe", "cmd", "bat", "com"] {
-            let mut p = base.clone().into_os_string();
+            let mut p = base.to_path_buf().into_os_string();
             p.push(format!(".{ext}"));
             v.push(PathBuf::from(p));
         }
         if !has_ext {
-            v.push(base.clone());
+            v.push(base.to_path_buf());
         }
         v
     } else {
-        vec![base.clone()]
+        vec![base.to_path_buf()]
     }
 }

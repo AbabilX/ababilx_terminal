@@ -14,6 +14,13 @@ impl EventSink for CollectSink {
     }
 }
 
+/// A ~1s-per-echo ping to `count` packets, spelled for the host OS: Windows
+/// counts with `-n`, macOS/Linux with `-c` (where `-n` means numeric).
+fn ping(count: u32) -> String {
+    let flag = if cfg!(windows) { "-n" } else { "-c" };
+    format!("ping {flag} {count} 127.0.0.1")
+}
+
 impl CollectSink {
     fn snapshot(&self) -> Vec<ShellEvent> {
         self.events.lock().unwrap().clone()
@@ -56,7 +63,7 @@ fn busy_session_rejects_second_command() {
     let session = Arc::new(TerminalSession::new(sink.clone()));
 
     // ping with count 3 takes ~2s; second run_line must be rejected.
-    session.run_line("ping -n 3 127.0.0.1".into()).unwrap();
+    session.run_line(ping(3)).unwrap();
     std::thread::sleep(Duration::from_millis(200));
     assert!(session.run_line("echo nope".into()).is_err());
     wait_idle(&session, Duration::from_secs(15));
@@ -68,7 +75,7 @@ fn cancel_kills_foreground_process() {
     let session = Arc::new(TerminalSession::new(sink.clone()));
 
     let started = Instant::now();
-    session.run_line("ping -n 30 127.0.0.1".into()).unwrap();
+    session.run_line(ping(30)).unwrap();
     std::thread::sleep(Duration::from_millis(500));
     session.cancel();
     wait_idle(&session, Duration::from_secs(10));
@@ -116,7 +123,7 @@ fn external_streams_incrementally() {
 
     // Two pings a second apart: output must arrive in more than one
     // Stdout event if streaming works.
-    session.run_line("ping -n 2 127.0.0.1".into()).unwrap();
+    session.run_line(ping(2)).unwrap();
     wait_idle(&session, Duration::from_secs(15));
 
     let events = sink.snapshot();
