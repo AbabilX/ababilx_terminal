@@ -13,6 +13,7 @@ import {
 } from "../../lib/tauri";
 import { matchesKeybind } from "../../lib/keybinds";
 import { resolveTheme } from "../../lib/themes";
+import { LsPicker } from "../../terminal/lsPicker";
 import { useSettingsStore } from "../../store/settings";
 import { useTerminalStore } from "../../store/terminal";
 
@@ -66,7 +67,17 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
       return !isAppShortcut;
     });
 
+    const picker = new LsPicker(terminal, containerRef.current);
+
     terminal.onData((data) => {
+      if (picker.active) {
+        if (/^[0-9]$/.test(data)) {
+          picker.select(Number(data)); // consumed; not sent to the shell
+          return;
+        }
+        picker.dismiss();
+      }
+      picker.noteInput(data);
       writeToSession(sessionId, data);
     });
 
@@ -76,7 +87,8 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
 
     const unlistenOutput = listen<PtyOutput>("pty-output", (event) => {
       if (event.payload.id === sessionId) {
-        terminal.write(event.payload.data);
+        // noteOutput must run after the chunk lands in the buffer.
+        terminal.write(event.payload.data, () => picker.noteOutput());
       }
     });
 
@@ -91,6 +103,7 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
     });
 
     const resizeObserver = new ResizeObserver(() => {
+      picker.dismiss(); // reflow shifts text under the overlay
       fitAddon.fit();
     });
     resizeObserver.observe(containerRef.current);
@@ -104,6 +117,7 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
       unlistenOutput.then((fn) => fn());
       unlistenExit.then((fn) => fn());
       closeSession(sessionId);
+      picker.dispose();
       terminal.dispose();
     };
   }, [sessionId]);
@@ -118,7 +132,7 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden"
+      className="relative h-full w-full overflow-hidden"
       onClick={() => terminalRef.current?.focus()}
     />
   );
