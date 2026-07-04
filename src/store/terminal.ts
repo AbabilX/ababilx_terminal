@@ -2,34 +2,33 @@ import { create } from "zustand";
 import type { SplitDirection, SplitTree, TerminalTab } from "../types/terminal";
 import { newTab } from "./tabNames";
 import {
-  findLeafTab,
+  findGroupTabContaining,
+  findLeafByPane,
+  makeBranch,
   removeLeaf,
   removeLeafPane,
   replaceLeafWithBranch,
   updateBranchSizes,
-  updateLeafTab,
 } from "./splitTree";
 
 interface TerminalStore {
   tabs: TerminalTab[];
-  /** Editor-area split layout; null when no tab has been split out yet. */
-  splitRoot: SplitTree | null;
   activeId: string | null;
   addTab: () => void;
   closeTab: (id: string) => void;
   setActive: (id: string) => void;
   renameTab: (id: string, title: string) => void;
   setTabBorderColor: (id: string, color: string | null) => void;
-  /** Adds an independent PTY pane to the right of the active tab's panes. */
+  /** Adds an independent PTY pane to the right of the active tab's panes (no-op on group tabs). */
   splitRight: () => void;
-  /** Drops `draggedTabId` onto the `targetTabId` pane's edge, splitting it. */
+  /** Drops `draggedTabId` onto the `targetTabId` pane's edge, splitting it into/within a group. */
   dropTabOnPane: (
     targetTabId: string,
     draggedTabId: string,
     direction: SplitDirection,
   ) => void;
   /** Moves one split pane's tab back to the normal top tab list. */
-  returnPaneToTabs: (tabId: string) => void;
+  returnPaneToTabs: (leafTabId: string) => void;
   /** Resizes a split branch; sizes are percentages for [first, second] children. */
   resizeSplitBranch: (branchId: string, sizes: [number, number]) => void;
   /** Removes a pane (e.g. its shell exited); removes the tab when empty. */
@@ -42,7 +41,6 @@ const initial = newTab();
 
 export const useTerminalStore = create<TerminalStore>((set) => ({
   tabs: [initial],
-  splitRoot: null,
   activeId: initial.id,
 
   addTab: () =>
@@ -53,10 +51,13 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
 
   closeTab: (id) =>
     set((state) => {
-      if (state.splitRoot && findLeafTab(state.splitRoot, id)) {
-        return collapseAfterRemoval(state, removeLeaf(state.splitRoot, id), null);
+      // Closing one pane's header button inside a group tab's split.
+      const groupTab = findGroupTabContaining(state.tabs, id);
+      if (groupTab?.splitGroup) {
+        return applyGroupRemoval(state, groupTab, removeLeaf(groupTab.splitGroup, id), null);
       }
 
+      // Closing a plain tab, or an entire group tab via its own top-bar close button.
       const tabs = state.tabs.filter((t) => t.id !== id);
       let activeId = state.activeId;
       if (activeId === id) {
@@ -76,9 +77,6 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
         tabs: state.tabs.map((tab) =>
           tab.id === id ? { ...tab, title: nextTitle } : tab,
         ),
-        splitRoot: state.splitRoot
-          ? updateLeafTab(state.splitRoot, id, (tab) => ({ ...tab, title: nextTitle }))
-          : null,
       };
     }),
 
@@ -87,18 +85,12 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
       tabs: state.tabs.map((tab) =>
         tab.id === id ? { ...tab, borderColor: color ?? undefined } : tab,
       ),
-      splitRoot: state.splitRoot
-        ? updateLeafTab(state.splitRoot, id, (tab) => ({
-            ...tab,
-            borderColor: color ?? undefined,
-          }))
-        : null,
     })),
 
   splitRight: () =>
     set((state) => ({
       tabs: state.tabs.map((tab) =>
-        tab.id === state.activeId
+        tab.id === state.activeId && !tab.splitGroup
           ? { ...tab, panes: [...tab.panes, crypto.randomUUID()] }
           : tab,
       ),
@@ -109,80 +101,101 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
       if (targetTabId === draggedTabId) return state;
 
       const draggedIndex = state.tabs.findIndex((t) => t.id === draggedTabId);
-      if (draggedIndex === -1) return state;
+      if (draggedIndex === -1) return state; // must be a plain top-bar tab
 
       const draggedTab = state.tabs[draggedIndex];
-      const tabsWithoutDragged = state.tabs.filter((_, i) => i !== draggedIndex);
+      if (draggedTab.splitGroup) return state; // dragging a whole group isn't supported yet
+
       const draggedLeaf: SplitTree = { type: "leaf", tab: draggedTab };
+      const tabsWithoutDragged = state.tabs.filter((_, i) => i !== draggedIndex);
 
-      if (!state.splitRoot) {
-        const targetIndex = tabsWithoutDragged.findIndex((t) => t.id === targetTabId);
-        if (targetIndex === -1) return state;
-
-        const targetTab = tabsWithoutDragged[targetIndex];
-        const remainingTabs = tabsWithoutDragged.filter((_, i) => i !== targetIndex);
-        const targetLeaf: SplitTree = { type: "leaf", tab: targetTab };
-
-        const root = replaceLeafWithBranch(
-          targetLeaf,
-          targetTab.id,
+      // Dropping onto a pane that's already part of an existing group extends that group.
+      const existingGroup = findGroupTabContaining(tabsWithoutDragged, targetTabId);
+      if (existingGroup?.splitGroup) {
+        const updatedTree = replaceLeafWithBranch(
+          existingGroup.splitGroup,
+          targetTabId,
           direction,
           draggedLeaf,
         );
-        if (!root) return state;
-
+        if (!updatedTree) return state;
         return {
-          tabs: remainingTabs,
-          splitRoot: root,
-          activeId: remainingTabs[0]?.id ?? null,
+          tabs: tabsWithoutDragged.map((tab) =>
+            tab.id === existingGroup.id ? { ...tab, splitGroup: updatedTree } : tab,
+          ),
         };
       }
 
-      const updatedRoot = replaceLeafWithBranch(
-        state.splitRoot,
-        targetTabId,
-        direction,
-        draggedLeaf,
-      );
-      if (!updatedRoot) return state;
+      // Otherwise the target is a plain tab — start a brand new group in its place.
+      const targetIndex = tabsWithoutDragged.findIndex((t) => t.id === targetTabId);
+      if (targetIndex === -1) return state;
+      const targetTab = tabsWithoutDragged[targetIndex];
+      if (targetTab.splitGroup) return state;
 
-      return { tabs: tabsWithoutDragged, splitRoot: updatedRoot };
+      const targetLeaf: SplitTree = { type: "leaf", tab: targetTab };
+      const groupTab: TerminalTab = {
+        id: crypto.randomUUID(),
+        title: "Split",
+        panes: [],
+        splitGroup: makeBranch(direction, targetLeaf, draggedLeaf),
+      };
+
+      const tabs = [...tabsWithoutDragged];
+      tabs.splice(targetIndex, 1, groupTab);
+
+      return { tabs, activeId: groupTab.id };
     }),
 
-  returnPaneToTabs: (tabId) =>
+  returnPaneToTabs: (leafTabId) =>
     set((state) => {
-      if (!state.splitRoot) return state;
-      return collapseAfterRemoval(state, removeLeaf(state.splitRoot, tabId), "return");
+      const groupTab = findGroupTabContaining(state.tabs, leafTabId);
+      if (!groupTab?.splitGroup) return state;
+      return applyGroupRemoval(
+        state,
+        groupTab,
+        removeLeaf(groupTab.splitGroup, leafTabId),
+        "return",
+      );
     }),
 
   resizeSplitBranch: (branchId, sizes) =>
-    set((state) => {
-      if (!state.splitRoot) return state;
-      return { splitRoot: updateBranchSizes(state.splitRoot, branchId, sizes) };
-    }),
+    set((state) => ({
+      tabs: state.tabs.map((tab) =>
+        tab.splitGroup
+          ? { ...tab, splitGroup: updateBranchSizes(tab.splitGroup, branchId, sizes) }
+          : tab,
+      ),
+    })),
 
   closePane: (paneId) =>
     set((state) => {
-      if (state.splitRoot) {
-        const result = removeLeafPane(state.splitRoot, paneId);
+      const groupTab = state.tabs.find(
+        (tab) => tab.splitGroup && findLeafByPane(tab.splitGroup, paneId),
+      );
+
+      if (groupTab?.splitGroup) {
+        const result = removeLeafPane(groupTab.splitGroup, paneId);
         if (result.laneEmptied) {
-          return collapseAfterRemoval(
+          return applyGroupRemoval(
             state,
+            groupTab,
             { tree: result.tree, removed: result.removedTab },
             null,
           );
         }
-        if (result.tree) {
-          return { splitRoot: result.tree };
-        }
+        if (!result.tree) return state;
+        return {
+          tabs: state.tabs.map((tab) =>
+            tab.id === groupTab.id ? { ...tab, splitGroup: result.tree! } : tab,
+          ),
+        };
       }
 
       const tabs = state.tabs
-        .map((tab) => ({
-          ...tab,
-          panes: tab.panes.filter((p) => p !== paneId),
-        }))
-        .filter((tab) => tab.panes.length > 0);
+        .map((tab) =>
+          tab.splitGroup ? tab : { ...tab, panes: tab.panes.filter((p) => p !== paneId) },
+        )
+        .filter((tab) => tab.splitGroup || tab.panes.length > 0);
 
       let activeId = state.activeId;
       if (activeId && !tabs.some((t) => t.id === activeId)) {
@@ -206,33 +219,44 @@ export const useTerminalStore = create<TerminalStore>((set) => ({
 }));
 
 /**
- * Shared collapse logic after removing a leaf from the split tree:
- * - Tree gone entirely -> that lone tab returns to the top bar.
- * - Tree collapsed to a single leaf -> both tabs return to the top bar (split ends).
- * - Otherwise -> keep the (smaller) split tree as-is.
+ * Applies the result of removing one leaf from `groupTab`'s split tree:
+ * - Tree fully collapses (0 leaves left) -> the group tab itself is discarded.
+ * - Tree collapses to a single leaf -> the group dissolves back into that
+ *   plain tab, in the same top-bar slot the group used to occupy.
+ * - Tree still has 2+ leaves -> the group tab keeps living with the smaller tree.
  *
- * `mode: "return"` also pushes the removed tab back to the top bar (Return button);
- * `mode: null` discards it (real close).
+ * `mode: "return"` appends the removed tab to the end of the top bar (Return
+ * button); `mode: null` discards it for good (real close). Focus only ever
+ * moves away from whatever's currently shown if the group being edited was
+ * itself the active tab and it just stopped existing.
  */
-function collapseAfterRemoval(
-  state: Pick<TerminalStore, "tabs">,
+function applyGroupRemoval(
+  state: Pick<TerminalStore, "tabs" | "activeId">,
+  groupTab: TerminalTab,
   result: { tree: SplitTree | null; removed: TerminalTab | null },
   mode: "return" | null,
 ): Partial<TerminalStore> {
   const { tree, removed } = result;
   if (!removed) return {};
 
-  const returnedTabs = mode === "return" ? [removed] : [];
+  const groupWasActive = state.activeId === groupTab.id;
+  const tail = mode === "return" ? [removed] : [];
 
   if (tree === null) {
-    const tabs = [...state.tabs, ...returnedTabs];
-    return { tabs, splitRoot: null, activeId: returnedTabs[0]?.id ?? tabs[0]?.id ?? null };
+    const tabs = state.tabs.filter((t) => t.id !== groupTab.id).concat(tail);
+    const activeId = groupWasActive ? tail[0]?.id ?? tabs[0]?.id ?? null : state.activeId;
+    return { tabs, activeId };
   }
 
   if (tree.type === "leaf") {
-    const tabs = [...state.tabs, tree.tab, ...returnedTabs];
-    return { tabs, splitRoot: null, activeId: returnedTabs[0]?.id ?? tree.tab.id };
+    const survivor = tree.tab;
+    const tabs = state.tabs.map((t) => (t.id === groupTab.id ? survivor : t)).concat(tail);
+    const activeId = groupWasActive ? survivor.id : state.activeId;
+    return { tabs, activeId };
   }
 
-  return { tabs: [...state.tabs, ...returnedTabs], splitRoot: tree };
+  const tabs = state.tabs
+    .map((t) => (t.id === groupTab.id ? { ...t, splitGroup: tree } : t))
+    .concat(tail);
+  return { tabs };
 }

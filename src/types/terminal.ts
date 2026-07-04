@@ -4,6 +4,14 @@ export interface TerminalTab {
   borderColor?: string;
   /** Each pane is an independent PTY session; rendered side by side. */
   panes: string[];
+  /**
+   * When set, this top-bar tab is a "group" tab: it has no panes of its own —
+   * its content is the split tree below, each leaf of which is its own full
+   * TerminalTab. Only one tab in the top bar can be shown at a time (a plain
+   * tab or a group tab), matching how iTerm/Terminal.app split panes live
+   * inside one tab instead of replacing the whole window.
+   */
+  splitGroup?: SplitTree;
 }
 
 export type SplitDirection = "left" | "right" | "top" | "bottom";

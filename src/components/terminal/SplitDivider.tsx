@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 
+import type { Rect } from "../../store/splitTree";
 import type { SplitOrientation } from "../../types/terminal";
 
 const MIN_RATIO = 0.15;
@@ -7,28 +8,42 @@ const MAX_RATIO = 0.85;
 
 interface SplitDividerProps {
   orientation: SplitOrientation;
+  /** The branch's own rect (in % of the workspace) that this divider resizes within. */
+  branchRect: Rect;
+  workspaceRef: React.RefObject<HTMLDivElement | null>;
   /** Called with the new first-pane ratio (0–1) while dragging. */
   onResize: (ratio: number) => void;
 }
 
-export function SplitDivider({ orientation, onResize }: SplitDividerProps) {
+export function SplitDivider({
+  orientation,
+  branchRect,
+  workspaceRef,
+  onResize,
+}: SplitDividerProps) {
   const dragging = useRef(false);
 
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       event.preventDefault();
-      const container = event.currentTarget.parentElement;
-      if (!container) return;
+      const workspace = workspaceRef.current;
+      if (!workspace) return;
 
-      const rect = container.getBoundingClientRect();
+      const workspaceRect = workspace.getBoundingClientRect();
+      const branchPixelRect = {
+        left: workspaceRect.left + (branchRect.left / 100) * workspaceRect.width,
+        top: workspaceRect.top + (branchRect.top / 100) * workspaceRect.height,
+        width: (branchRect.width / 100) * workspaceRect.width,
+        height: (branchRect.height / 100) * workspaceRect.height,
+      };
       dragging.current = true;
 
       const handleMove = (moveEvent: PointerEvent) => {
         if (!dragging.current) return;
         const raw =
           orientation === "row"
-            ? (moveEvent.clientX - rect.left) / rect.width
-            : (moveEvent.clientY - rect.top) / rect.height;
+            ? (moveEvent.clientX - branchPixelRect.left) / branchPixelRect.width
+            : (moveEvent.clientY - branchPixelRect.top) / branchPixelRect.height;
         onResize(Math.min(MAX_RATIO, Math.max(MIN_RATIO, raw)));
       };
 
@@ -41,7 +56,7 @@ export function SplitDivider({ orientation, onResize }: SplitDividerProps) {
       window.addEventListener("pointermove", handleMove);
       window.addEventListener("pointerup", handleUp);
     },
-    [orientation, onResize],
+    [orientation, branchRect, workspaceRef, onResize],
   );
 
   return (
@@ -49,8 +64,8 @@ export function SplitDivider({ orientation, onResize }: SplitDividerProps) {
       onPointerDown={handlePointerDown}
       className={
         orientation === "row"
-          ? "w-1 shrink-0 cursor-col-resize bg-white/5 transition-colors hover:bg-sky-400/40"
-          : "h-1 shrink-0 cursor-row-resize bg-white/5 transition-colors hover:bg-sky-400/40"
+          ? "h-full w-full cursor-col-resize bg-transparent transition-colors hover:bg-sky-400/40"
+          : "h-full w-full cursor-row-resize bg-transparent transition-colors hover:bg-sky-400/40"
       }
     />
   );

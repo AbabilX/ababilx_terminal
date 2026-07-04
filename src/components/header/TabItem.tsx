@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Cancel01Icon, TerminalIcon } from "@hugeicons/core-free-icons";
+import {
+  Cancel01Icon,
+  DashboardSquare03Icon,
+  TerminalIcon,
+} from "@hugeicons/core-free-icons";
 
 import type { TerminalTab } from "../../types/terminal";
 import { TabContextMenu } from "./TabContextMenu";
@@ -76,6 +80,7 @@ export function TabItem({
           setMenu({ x: e.clientX, y: e.clientY });
         }}
         style={style}
+        title={tab.splitGroup ? "Split view — contains multiple panes" : undefined}
         className={`group flex h-7 min-w-[120px] max-w-[200px] cursor-pointer select-none items-center gap-2 rounded-md border px-2.5 text-xs transition-colors ${
           dragging ? "opacity-40" : ""
         } ${
@@ -85,7 +90,7 @@ export function TabItem({
         }`}
       >
         <HugeiconsIcon
-          icon={TerminalIcon}
+          icon={tab.splitGroup ? DashboardSquare03Icon : TerminalIcon}
           size={13}
           className={active ? "shrink-0 text-gray-300" : "shrink-0"}
           strokeWidth={2}

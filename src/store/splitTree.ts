@@ -159,3 +159,83 @@ export function removeLeafPane(
   const { tree: nextTree, removed } = removeLeaf(tree, owner.id);
   return { tree: nextTree, removedTab: removed, laneEmptied: true };
 }
+
+/** Finds whichever top-bar group tab (if any) contains `leafTabId` as one of its split leaves. */
+export function findGroupTabContaining(
+  tabs: TerminalTab[],
+  leafTabId: string,
+): TerminalTab | null {
+  return (
+    tabs.find(
+      (tab) => tab.splitGroup && findLeafTab(tab.splitGroup, leafTabId) !== null,
+    ) ?? null
+  );
+}
+
+/** A rectangle in percentages (0–100) of the workspace container. */
+export interface Rect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+export interface LayoutLeaf {
+  tab: TerminalTab;
+  rect: Rect;
+}
+
+export interface LayoutDivider {
+  branchId: string;
+  orientation: SplitOrientation;
+  /** Full rect of the branch being resized — the divider drag is relative to this. */
+  branchRect: Rect;
+  /** Where the thin divider line sits: left% for "row", top% for "column". */
+  linePosition: number;
+}
+
+const FULL_RECT: Rect = { top: 0, left: 0, width: 100, height: 100 };
+
+/**
+ * Flattens a split tree into leaf rects + divider positions, all in percentages
+ * of the workspace. Rendering from this flat list (instead of nesting React
+ * components per branch) keeps every leaf's DOM position stable across layout
+ * changes, so terminal sessions never get remounted (and thus never reset).
+ */
+export function computeSplitLayout(
+  tree: SplitTree,
+  rect: Rect = FULL_RECT,
+): { leaves: LayoutLeaf[]; dividers: LayoutDivider[] } {
+  if (tree.type === "leaf") {
+    return { leaves: [{ tab: tree.tab, rect }], dividers: [] };
+  }
+
+  const [firstSize] = tree.sizes;
+  let firstRect: Rect;
+  let secondRect: Rect;
+  let linePosition: number;
+
+  if (tree.orientation === "row") {
+    const firstWidth = (rect.width * firstSize) / 100;
+    firstRect = { ...rect, width: firstWidth };
+    secondRect = { ...rect, left: rect.left + firstWidth, width: rect.width - firstWidth };
+    linePosition = rect.left + firstWidth;
+  } else {
+    const firstHeight = (rect.height * firstSize) / 100;
+    firstRect = { ...rect, height: firstHeight };
+    secondRect = { ...rect, top: rect.top + firstHeight, height: rect.height - firstHeight };
+    linePosition = rect.top + firstHeight;
+  }
+
+  const first = computeSplitLayout(tree.children[0], firstRect);
+  const second = computeSplitLayout(tree.children[1], secondRect);
+
+  return {
+    leaves: [...first.leaves, ...second.leaves],
+    dividers: [
+      ...first.dividers,
+      { branchId: tree.id, orientation: tree.orientation, branchRect: rect, linePosition },
+      ...second.dividers,
+    ],
+  };
+}

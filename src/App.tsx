@@ -13,7 +13,7 @@ import { useTerminalStore } from "./store/terminal";
 const SETTINGS_REFRESH_MS = 750;
 
 function App() {
-  const { tabs, splitRoot } = useTerminalStore();
+  const { tabs } = useTerminalStore();
   const loadSettings = useSettingsStore((s) => s.load);
   const settingsLoaded = useSettingsStore((s) => s.loaded);
   const appearance = useSettingsStore((s) => s.settings.appearance);
@@ -33,10 +33,10 @@ function App() {
 
   // Close the window when the last tab is gone.
   useEffect(() => {
-    if (tabs.length === 0 && !splitRoot) {
+    if (tabs.length === 0) {
       getCurrentWindow().close();
     }
-  }, [splitRoot, tabs.length]);
+  }, [tabs.length]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
