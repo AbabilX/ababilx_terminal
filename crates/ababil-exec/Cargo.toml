@@ -1,0 +1,10 @@
+[package]
+name = "ababil-exec"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Process launchers for AbabilX: native buffered launcher now, session-PTY launcher next"
+
+[dependencies]
+ababil-runtime = { path = "../ababil-runtime" }
+portable-pty = "0.9"

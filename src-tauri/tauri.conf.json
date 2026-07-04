@@ -13,8 +13,10 @@
     "windows": [
       {
         "title": "AbabilX",
-        "width": 1000,
-        "height": 620
+        "width": 1080,
+        "height": 720,
+        "fullscreen": false,
+        "decorations": false
       }
     ],
     "security": {

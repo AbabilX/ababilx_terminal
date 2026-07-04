@@ -1,0 +1,10 @@
+[package]
+name = "ababil-runtime"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Execution runtime for the AbabilX shell: state, expansion, builtins, pipelines"
+
+[dependencies]
+ababil-parser = { path = "../ababil-parser" }
+thiserror = { workspace = true }

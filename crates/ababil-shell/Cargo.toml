@@ -1,0 +1,13 @@
+[package]
+name = "ababil-shell"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "AbabilX shell session: line evaluation, aliases, history orchestration"
+
+[dependencies]
+ababil-parser = { path = "../ababil-parser" }
+ababil-runtime = { path = "../ababil-runtime" }
+
+[dev-dependencies]
+ababil-exec = { path = "../ababil-exec" }

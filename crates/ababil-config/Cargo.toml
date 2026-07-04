@@ -1,0 +1,11 @@
+[package]
+name = "ababil-config"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Layered JSON configuration for AbabilX: defaults -> user -> workspace -> project -> runtime"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

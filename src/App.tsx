@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-import { Terminal, TerminalTabs } from "./components/terminal";
+import { AppHeader } from "./components/AppHeader";
+import { Terminal } from "./components/terminal";
 import { matchesKeybind } from "./lib/keybinds";
 import { openSettingsFile, useSettingsStore } from "./store/settings";
 import { useTerminalStore } from "./store/terminal";
@@ -47,7 +48,7 @@ function App() {
 
   return (
     <main className="flex h-screen w-screen flex-col bg-[#0d1117]">
-      <TerminalTabs />
+      <AppHeader />
       <div className="relative min-h-0 flex-1">
         {tabs.map((tab) => (
           <div

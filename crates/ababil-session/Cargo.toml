@@ -1,0 +1,12 @@
+[package]
+name = "ababil-session"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Terminal session runtime for AbabilX: event-driven ShellEvent API, process lifecycle, capabilities"
+
+[dependencies]
+ababil-exec = { path = "../ababil-exec" }
+ababil-runtime = { path = "../ababil-runtime" }
+ababil-shell = { path = "../ababil-shell" }
+serde = { workspace = true }

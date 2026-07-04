@@ -1,0 +1,9 @@
+[package]
+name = "ababil-parser"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Lexer, parser and AST for the AbabilX shell language"
+
+[dependencies]
+thiserror = { workspace = true }
