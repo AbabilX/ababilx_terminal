@@ -62,15 +62,21 @@ export class LsPicker {
     this.overlay.select(index);
   }
 
+  /** Arms the tracker for a rewritten `ls -1p` sent from the input router. */
+  armLs() {
+    this.tracker.arm();
+  }
+
   /** Command for the bordered entry; null when nothing selected. */
   commandForSelected(): string | null {
     if (!this.active) return null;
     const entry = this.overlay.selectedEntry;
     if (!entry) return null;
-    const name = entry.name.replace(/'/g, `'\\''`);
+    const clean = entry.name.replace(/\/+$/, ""); // drop the `-p` trailing slash
+    const name = clean.replace(/'/g, `'\\''`);
     this.dismiss();
     this.tracker.arm();
-    return `cd '${name}' && ls`;
+    return `cd '${name}' && ls -1p`;
   }
 
   dismiss() {
@@ -91,9 +97,9 @@ export class LsPicker {
   }
 
   private onEnter() {
-    const line = this.line;
+    // A plain `ls` is intercepted + rewritten in routeInput before it reaches
+    // here, so this only resets state for every other Enter.
     this.mirror.reset();
     this.dismiss();
-    if (line !== null && LsTracker.isPlainLs(line)) this.tracker.arm();
   }
 }

@@ -1,4 +1,5 @@
 import type { LsPicker } from "./lsPicker";
+import { LsTracker } from "./lsPicker/tracker";
 import { findAlias } from "../lib/aliases";
 import { writeToSession } from "../lib/tauri";
 import { useSettingsStore } from "../store/settings";
@@ -59,6 +60,16 @@ export function routeInput(ctx: InputContext, data: string) {
       writeToSession(sessionId, "\x15"); // clear typed alias from shell line
       picker.resetLine();
       writeToSession(sessionId, alias.func.trim() + "\r");
+      return;
+    }
+
+    // Plain `ls` → re-issue as `ls -1p` so the picker can number folders only
+    // (trailing `/`) and survive spaced names (one entry per line).
+    if (line && LsTracker.isPlainLs(line)) {
+      writeToSession(sessionId, "\x15"); // wipe the typed "ls ..." line
+      picker.resetLine();
+      picker.armLs(); // arm before output arrives
+      writeToSession(sessionId, LsTracker.rewriteWithFlags(line) + "\r");
       return;
     }
   }

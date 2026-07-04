@@ -15,10 +15,18 @@ export class LsTracker {
     private onEntries: (entries: LsEntry[]) => void,
   ) {}
 
-  /** True when `line` is a plain ls (flags would break the column parse). */
+  /** True when `line` is a plain ls (flags mean the user picked their own
+   * layout — don't rewrite or number it). */
   static isPlainLs(line: string): boolean {
     const tokens = line.trim().split(/\s+/).filter(Boolean);
     return tokens[0] === "ls" && !tokens.some((t) => t.startsWith("-"));
+  }
+
+  /** Rewrites a plain `ls [args]` to `ls -1p [args]`: `-1` (one entry per
+   * line, so spaced names stay intact) + `-p` (trailing `/` marks folders). */
+  static rewriteWithFlags(line: string): string {
+    const rest = line.trim().replace(/^ls\b/, "").trim();
+    return rest ? `ls -1p ${rest}` : "ls -1p";
   }
 
   /** Output of the next command starts one row below the cursor. */
