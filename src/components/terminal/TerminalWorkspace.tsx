@@ -1,49 +1,42 @@
-import type { SplitDirection } from "../../types/terminal";
 import { useTerminalStore } from "../../store/terminal";
 import { SplitDropOverlay } from "./SplitDropOverlay";
+import { SplitTreeView } from "./SplitTreeView";
 import { TerminalTabView } from "./TerminalTabView";
 
 export function TerminalWorkspace() {
-  const {
-    tabs,
-    activeId,
-    splitLayout,
-    closeTab,
-    splitTabToSide,
-    returnSplitToTabs,
-  } = useTerminalStore();
+  const { tabs, activeId, splitRoot, dropTabOnPane } = useTerminalStore();
+
+  if (splitRoot) {
+    return (
+      <div className="absolute inset-0">
+        <SplitTreeView node={splitRoot} />
+      </div>
+    );
+  }
 
   return (
-    <SplitDropOverlay onDropTab={splitTabToSide}>
-      {splitLayout ? (
-        <div className={`absolute inset-0 flex ${splitClass(splitLayout.direction)}`}>
-          {splitLayout.tabs.map((tab) => (
-            <TerminalTabView
-              key={tab.id}
-              tab={tab}
-              visible
-              showHeader
-              onClose={() => closeTab(tab.id)}
-              onReturn={() => returnSplitToTabs(tab.id)}
-            />
-          ))}
-        </div>
-      ) : (
-        tabs.map((tab) => (
+    <div className="absolute inset-0">
+      {tabs.map((tab) => {
+        const isActive = tab.id === activeId;
+        return (
           <div
             key={tab.id}
-            className={`absolute inset-0 ${
-              tab.id === activeId ? "visible" : "invisible"
-            }`}
+            className={`absolute inset-0 ${isActive ? "visible" : "invisible"}`}
           >
-            <TerminalTabView tab={tab} visible={tab.id === activeId} />
+            {isActive ? (
+              <SplitDropOverlay
+                onDropTab={(draggedId, direction) =>
+                  dropTabOnPane(tab.id, draggedId, direction)
+                }
+              >
+                <TerminalTabView tab={tab} visible />
+              </SplitDropOverlay>
+            ) : (
+              <TerminalTabView tab={tab} visible={false} />
+            )}
           </div>
-        ))
-      )}
-    </SplitDropOverlay>
+        );
+      })}
+    </div>
   );
-}
-
-function splitClass(direction: SplitDirection) {
-  return direction === "top" || direction === "bottom" ? "flex-col" : "flex-row";
 }

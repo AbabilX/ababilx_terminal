@@ -8,10 +8,25 @@ export interface TerminalTab {
 
 export type SplitDirection = "left" | "right" | "top" | "bottom";
 
-export interface SplitLayout {
-  direction: SplitDirection;
-  tabs: [TerminalTab, TerminalTab];
+/** "row" = side-by-side panes (left/right splits); "column" = stacked panes (top/bottom splits). */
+export type SplitOrientation = "row" | "column";
+
+export interface SplitLeaf {
+  type: "leaf";
+  tab: TerminalTab;
 }
+
+export interface SplitBranch {
+  type: "branch";
+  id: string;
+  orientation: SplitOrientation;
+  /** Percentage sizes (sum to 100) for [first child, second child]. */
+  sizes: [number, number];
+  children: [SplitTree, SplitTree];
+}
+
+/** Recursive layout tree: a pane is either a single tab (leaf) or a further split (branch). */
+export type SplitTree = SplitLeaf | SplitBranch;
 
 export interface Keybindings {
   newTab: string;
