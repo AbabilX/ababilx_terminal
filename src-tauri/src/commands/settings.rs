@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager};
 const DEFAULT_SETTINGS: &str = r##"{
   "shell": {
     "program": "auto",
-    "args": ["-NoLogo", "-NoProfile"]
+    "args": __SHELL_ARGS__
   },
   "appearance": {
     "theme": "dark",
@@ -29,6 +29,22 @@ const DEFAULT_SETTINGS: &str = r##"{
 }
 "##;
 
+/// Windows PowerShell flags; on unix the shell runs as a login shell instead.
+const WINDOWS_SHELL_ARGS: [&str; 2] = ["-NoLogo", "-NoProfile"];
+
+fn default_shell_args() -> Vec<String> {
+    if cfg!(windows) {
+        WINDOWS_SHELL_ARGS.iter().map(|s| s.to_string()).collect()
+    } else {
+        vec!["-l".into()]
+    }
+}
+
+fn default_settings() -> String {
+    let args = serde_json::to_string(&default_shell_args()).unwrap_or_else(|_| "[]".into());
+    DEFAULT_SETTINGS.replace("__SHELL_ARGS__", &args)
+}
+
 fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
@@ -38,7 +54,7 @@ fn settings_path(app: &AppHandle) -> Result<PathBuf, String> {
 fn ensure_settings(app: &AppHandle) -> Result<PathBuf, String> {
     let path = settings_path(app)?;
     if !path.exists() {
-        fs::write(&path, DEFAULT_SETTINGS).map_err(|e| e.to_string())?;
+        fs::write(&path, default_settings()).map_err(|e| e.to_string())?;
     }
     Ok(path)
 }
@@ -88,7 +104,14 @@ pub fn shell_config(app: &AppHandle) -> (Option<String>, Vec<String>) {
                 .filter_map(|v| v.as_str().map(String::from))
                 .collect()
         })
-        .unwrap_or_else(|| vec!["-NoLogo".into(), "-NoProfile".into()]);
+        .unwrap_or_else(default_shell_args);
+
+    // A settings.json created on Windows carries PowerShell flags that make
+    // unix shells exit immediately ("zsh: bad option"); swap the untouched
+    // Windows defaults for this platform's defaults.
+    if !cfg!(windows) && args == WINDOWS_SHELL_ARGS {
+        args = default_shell_args();
+    }
 
     // Load our own init script (custom prompt) unless the user already
     // controls startup via -Command/-File in their shell args.
