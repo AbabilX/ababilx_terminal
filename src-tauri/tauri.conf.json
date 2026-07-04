@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "terminal-app",
+  "productName": "Abaxana",
   "version": "0.1.0",
-  "identifier": "com.ababilx.terminal",
+  "identifier": "com.ababilx.abaxana",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "AbabilX",
+        "title": "Abaxana",
         "width": 1080,
         "height": 720,
         "fullscreen": false,
