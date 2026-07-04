@@ -78,6 +78,22 @@ export class LsPicker {
     this.render();
   }
 
+  /**
+   * Command to run for the bordered entry, or null when nothing is selected.
+   * Dismisses the overlay and re-arms ls tracking so the inner listing gets
+   * numbered again (the injected command echoes on the current prompt row,
+   * so its output starts one row below — same shape as a typed command).
+   */
+  commandForSelected(): string | null {
+    if (!this.active || this.selected < 0) return null;
+    const name = this.entries[this.selected].name.replace(/'/g, `'\\''`);
+    this.dismiss();
+    const buf = this.term.buffer.active;
+    this.startRow = buf.baseY + buf.cursorY + 1;
+    this.awaiting = true;
+    return `cd '${name}' && ls`;
+  }
+
   dismiss() {
     this.awaiting = false;
     this.active = false;

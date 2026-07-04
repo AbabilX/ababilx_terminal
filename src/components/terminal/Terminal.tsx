@@ -75,6 +75,17 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
           picker.select(Number(data)); // consumed; not sent to the shell
           return;
         }
+        if (data === "\x1b") {
+          picker.dismiss(); // Esc: back to normal typing, nothing sent
+          return;
+        }
+        if (data === "\r") {
+          const cmd = picker.commandForSelected();
+          if (cmd) {
+            writeToSession(sessionId, cmd + "\r"); // cd into it + list inside
+            return;
+          }
+        }
         picker.dismiss();
       }
       picker.noteInput(data);
