@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { useTerminalStore } from "../store/terminal";
@@ -7,6 +8,8 @@ const win = getCurrentWindow();
 export function AppHeader() {
   const { tabs, activeId, addTab, closeTab, setActive, reorderTab } =
     useTerminalStore();
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const lastOverId = useRef<string | null>(null);
 
   return (
     <div
@@ -26,15 +29,28 @@ export function AppHeader() {
               onDragStart={(e) => {
                 e.dataTransfer.setData("text/tab-id", tab.id);
                 e.dataTransfer.effectAllowed = "move";
+                lastOverId.current = tab.id;
+                setDraggingId(tab.id);
+              }}
+              onDragEnter={() => {
+                if (
+                  draggingId &&
+                  draggingId !== tab.id &&
+                  lastOverId.current !== tab.id
+                ) {
+                  lastOverId.current = tab.id;
+                  reorderTab(draggingId, tab.id);
+                }
               }}
               onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                const draggedId = e.dataTransfer.getData("text/tab-id");
-                if (draggedId) reorderTab(draggedId, tab.id);
+              onDragEnd={() => {
+                setDraggingId(null);
+                lastOverId.current = null;
               }}
               onClick={() => setActive(tab.id)}
               className={`group flex min-w-[120px] max-w-[200px] cursor-pointer items-center gap-2 border-r border-[#0d1117] px-3 text-xs ${
+                draggingId === tab.id ? "opacity-40" : ""
+              } ${
                 active
                   ? "bg-[#0d1117] text-gray-200"
                   : "text-gray-500 hover:bg-[#1c2128] hover:text-gray-300"

@@ -15,13 +15,37 @@ interface TerminalStore {
   reorderTab: (draggedId: string, targetId: string) => void;
 }
 
-let tabCounter = 0;
+const FLOWER_NAMES = [
+  "Rose",
+  "Tulip",
+  "Lily",
+  "Daisy",
+  "Orchid",
+  "Jasmine",
+  "Marigold",
+  "Lotus",
+  "Iris",
+  "Poppy",
+  "Peony",
+  "Dahlia",
+  "Camellia",
+  "Hibiscus",
+  "Magnolia",
+  "Azalea",
+  "Zinnia",
+  "Violet",
+  "Sunflower",
+  "Lavender",
+];
+
+function randomFlowerName(): string {
+  return FLOWER_NAMES[Math.floor(Math.random() * FLOWER_NAMES.length)];
+}
 
 function newTab(): TerminalTab {
-  tabCounter += 1;
   return {
     id: crypto.randomUUID(),
-    title: `Terminal ${tabCounter}`,
+    title: randomFlowerName(),
     panes: [crypto.randomUUID()],
   };
 }
