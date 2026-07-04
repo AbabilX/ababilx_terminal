@@ -1,66 +1,71 @@
-import { findGroupTabContaining, findLeafByPane, removeLeaf, removeLeafPane } from "../splitTree";
-import { applyGroupRemoval } from "./applyGroupRemoval";
+import { removeGroupMember } from "./applyGroupRemoval";
 import type { SetTerminalState, TerminalStore } from "./types";
 
 type CloseActions = Pick<TerminalStore, "closeTab" | "closePane">;
+
+function closeSlot(
+  state: Pick<TerminalStore, "tabs" | "activeId">,
+  id: string,
+  tabs: TerminalStore["tabs"],
+): Partial<TerminalStore> {
+  let activeId = state.activeId;
+  if (activeId === id) {
+    const closedIndex = state.tabs.findIndex((t) => t.id === id);
+    activeId = tabs[Math.max(0, closedIndex - 1)]?.id ?? null;
+  }
+  return { tabs, activeId };
+}
 
 /** Removal flows that may collapse or dissolve a split group. */
 export function createCloseActions(set: SetTerminalState): CloseActions {
   return {
     closeTab: (id) =>
       set((state) => {
-        // Closing one pane's header button inside a group tab's split.
-        const groupTab = findGroupTabContaining(state.tabs, id);
-        if (groupTab?.splitGroup) {
-          return applyGroupRemoval(state, groupTab, removeLeaf(groupTab.splitGroup, id), null);
+        const tab = state.tabs.find((t) => t.id === id);
+        if (!tab) return state;
+
+        // Closing the whole split pill via its own top-bar close button.
+        if (tab.splitGroup) {
+          return closeSlot(
+            state,
+            id,
+            state.tabs.filter((t) => t.id !== id && t.groupId !== id),
+          );
         }
 
-        // Closing a plain tab, or an entire group tab via its own top-bar close button.
-        const tabs = state.tabs.filter((t) => t.id !== id);
-        let activeId = state.activeId;
-        if (activeId === id) {
-          const closedIndex = state.tabs.findIndex((t) => t.id === id);
-          activeId = tabs[Math.max(0, closedIndex - 1)]?.id ?? null;
+        // Closing one pane's header button inside a group tab's split.
+        if (tab.groupId) {
+          const groupTab = state.tabs.find((t) => t.id === tab.groupId);
+          if (!groupTab) return state;
+          return removeGroupMember(state, groupTab, tab, "kill");
         }
-        return { tabs, activeId };
+
+        // Closing a plain solo tab.
+        return closeSlot(state, id, state.tabs.filter((t) => t.id !== id));
       }),
 
     closePane: (paneId) =>
       set((state) => {
-        const groupTab = state.tabs.find(
-          (tab) => tab.splitGroup && findLeafByPane(tab.splitGroup, paneId),
-        );
+        const tab = state.tabs.find((t) => t.panes.includes(paneId));
+        if (!tab) return state;
 
-        if (groupTab?.splitGroup) {
-          const result = removeLeafPane(groupTab.splitGroup, paneId);
-          if (result.laneEmptied) {
-            return applyGroupRemoval(
-              state,
-              groupTab,
-              { tree: result.tree, removed: result.removedTab },
-              null,
-            );
-          }
-          if (!result.tree) return state;
+        const remainingPanes = tab.panes.filter((p) => p !== paneId);
+        if (remainingPanes.length > 0) {
           return {
-            tabs: state.tabs.map((tab) =>
-              tab.id === groupTab.id ? { ...tab, splitGroup: result.tree! } : tab,
+            tabs: state.tabs.map((t) =>
+              t.id === tab.id ? { ...t, panes: remainingPanes } : t,
             ),
           };
         }
 
-        const tabs = state.tabs
-          .map((tab) =>
-            tab.splitGroup ? tab : { ...tab, panes: tab.panes.filter((p) => p !== paneId) },
-          )
-          .filter((tab) => tab.splitGroup || tab.panes.length > 0);
-
-        let activeId = state.activeId;
-        if (activeId && !tabs.some((t) => t.id === activeId)) {
-          const closedIndex = state.tabs.findIndex((t) => t.id === activeId);
-          activeId = tabs[Math.max(0, closedIndex - 1)]?.id ?? null;
+        // Last pane closing empties the tab.
+        if (tab.groupId) {
+          const groupTab = state.tabs.find((t) => t.id === tab.groupId);
+          if (!groupTab) return state;
+          return removeGroupMember(state, groupTab, tab, "kill");
         }
-        return { tabs, activeId };
+
+        return closeSlot(state, tab.id, state.tabs.filter((t) => t.id !== tab.id));
       }),
   };
 }

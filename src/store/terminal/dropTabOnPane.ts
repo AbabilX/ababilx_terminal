@@ -11,17 +11,16 @@ export function dropTabOnPane(
 ): Partial<TerminalStore> {
   if (targetTabId === draggedTabId) return {};
 
-  const draggedIndex = state.tabs.findIndex((t) => t.id === draggedTabId);
-  if (draggedIndex === -1) return {}; // must be a plain top-bar tab
+  const draggedTab = state.tabs.find((t) => t.id === draggedTabId);
+  if (!draggedTab || draggedTab.splitGroup || draggedTab.groupId) return {}; // must be a plain top-bar tab
 
-  const draggedTab = state.tabs[draggedIndex];
-  if (draggedTab.splitGroup) return {}; // dragging a whole group isn't supported yet
+  const targetTab = state.tabs.find((t) => t.id === targetTabId);
+  if (!targetTab) return {};
 
-  const draggedLeaf: SplitTree = { type: "leaf", tab: draggedTab };
-  const tabsWithoutDragged = state.tabs.filter((_, i) => i !== draggedIndex);
+  const draggedLeaf: SplitTree = { type: "leaf", tabId: draggedTab.id };
 
   // Dropping onto a pane that's already part of an existing group extends that group.
-  const existingGroup = findGroupTabContaining(tabsWithoutDragged, targetTabId);
+  const existingGroup = findGroupTabContaining(state.tabs, targetTabId);
   if (existingGroup?.splitGroup) {
     const updatedTree = replaceLeafWithBranch(
       existingGroup.splitGroup,
@@ -31,19 +30,18 @@ export function dropTabOnPane(
     );
     if (!updatedTree) return {};
     return {
-      tabs: tabsWithoutDragged.map((tab) =>
-        tab.id === existingGroup.id ? { ...tab, splitGroup: updatedTree } : tab,
-      ),
+      tabs: state.tabs.map((t) => {
+        if (t.id === existingGroup.id) return { ...t, splitGroup: updatedTree };
+        if (t.id === draggedTab.id) return { ...t, groupId: existingGroup.id };
+        return t;
+      }),
     };
   }
 
-  // Otherwise the target is a plain tab — start a brand new group in its place.
-  const targetIndex = tabsWithoutDragged.findIndex((t) => t.id === targetTabId);
-  if (targetIndex === -1) return {};
-  const targetTab = tabsWithoutDragged[targetIndex];
-  if (targetTab.splitGroup) return {};
-
-  const targetLeaf: SplitTree = { type: "leaf", tab: targetTab };
+  // Otherwise the target is a plain tab — start a brand new group. Both source
+  // tabs keep their own permanent top-level slot (just tagged with groupId);
+  // only a new pseudo group-tab is appended for the "Split" pill + layout tree.
+  const targetLeaf: SplitTree = { type: "leaf", tabId: targetTab.id };
   const groupTab: TerminalTab = {
     id: crypto.randomUUID(),
     title: "Split",
@@ -51,8 +49,9 @@ export function dropTabOnPane(
     splitGroup: makeBranch(direction, targetLeaf, draggedLeaf),
   };
 
-  const tabs = [...tabsWithoutDragged];
-  tabs.splice(targetIndex, 1, groupTab);
+  const tabs = state.tabs.map((t) =>
+    t.id === targetTab.id || t.id === draggedTab.id ? { ...t, groupId: groupTab.id } : t,
+  );
 
-  return { tabs, activeId: groupTab.id };
+  return { tabs: [...tabs, groupTab], activeId: groupTab.id };
 }

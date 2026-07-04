@@ -5,11 +5,20 @@ export interface TerminalTab {
   /** Each pane is an independent PTY session; rendered side by side. */
   panes: string[];
   /**
-   * When set, this top-bar tab is a "group" tab: it has no panes of its own —
-   * its content is the split tree below, each leaf of which is its own full
-   * TerminalTab. Only one tab in the top bar can be shown at a time (a plain
-   * tab or a group tab), matching how iTerm/Terminal.app split panes live
-   * inside one tab instead of replacing the whole window.
+   * When set, this is the id of the "group" pseudo-tab whose split tree this
+   * tab is currently a leaf of. The tab itself keeps its own permanent,
+   * never-removed slot in the flat `tabs` array either way — grouping only
+   * changes where it's positioned/shown, never whether it's mounted, so its
+   * terminal (scrollback + live PTY) survives every split/merge/collapse.
+   */
+  groupId?: string;
+  /**
+   * When set, this top-bar tab is a "group" pseudo-tab: it holds no panes of
+   * its own, only the split tree below. Each leaf references a real tab (by
+   * id) elsewhere in the flat `tabs` array via `groupId`. Only one tab in the
+   * top bar can be shown at a time (a plain tab or a group tab), matching how
+   * iTerm/Terminal.app split panes live inside one tab instead of replacing
+   * the whole window.
    */
   splitGroup?: SplitTree;
 }
@@ -21,7 +30,7 @@ export type SplitOrientation = "row" | "column";
 
 export interface SplitLeaf {
   type: "leaf";
-  tab: TerminalTab;
+  tabId: string;
 }
 
 export interface SplitBranch {

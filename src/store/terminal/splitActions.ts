@@ -1,5 +1,5 @@
-import { findGroupTabContaining, removeLeaf, updateBranchSizes } from "../splitTree";
-import { applyGroupRemoval } from "./applyGroupRemoval";
+import { updateBranchSizes } from "../splitTree";
+import { removeGroupMember } from "./applyGroupRemoval";
 import { dropTabOnPane } from "./dropTabOnPane";
 import type { SetTerminalState, TerminalStore } from "./types";
 
@@ -25,14 +25,11 @@ export function createSplitActions(set: SetTerminalState): SplitActions {
 
     returnPaneToTabs: (leafTabId) =>
       set((state) => {
-        const groupTab = findGroupTabContaining(state.tabs, leafTabId);
-        if (!groupTab?.splitGroup) return state;
-        return applyGroupRemoval(
-          state,
-          groupTab,
-          removeLeaf(groupTab.splitGroup, leafTabId),
-          "return",
-        );
+        const tab = state.tabs.find((t) => t.id === leafTabId);
+        if (!tab?.groupId) return state;
+        const groupTab = state.tabs.find((t) => t.id === tab.groupId);
+        if (!groupTab) return state;
+        return removeGroupMember(state, groupTab, tab, "return");
       }),
 
     resizeSplitBranch: (branchId, sizes) =>

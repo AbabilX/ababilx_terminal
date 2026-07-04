@@ -30,7 +30,7 @@ export function AppHeader() {
         data-tauri-drag-region
         className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-1.5"
       >
-        {tabs.map((tab) => (
+        {tabs.filter((tab) => !tab.groupId).map((tab) => (
           <TabItem
             key={tab.id}
             tab={tab}

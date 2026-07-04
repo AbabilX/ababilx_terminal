@@ -1,48 +1,53 @@
-import type { SplitTree, TerminalTab } from "../../types/terminal";
+import type { TerminalTab } from "../../types/terminal";
+import { removeLeaf } from "../splitTree";
 import type { TerminalStore } from "./types";
 
 /**
- * Applies the result of removing one leaf from `groupTab`'s split tree:
- * - Tree fully collapses (0 leaves left) -> the group tab itself is discarded.
- * - Tree collapses to a single leaf -> the group dissolves back into that
- *   plain tab, in the same top-bar slot the group used to occupy.
- * - Tree still has 2+ leaves -> the group tab keeps living with the smaller tree.
- *
- * `mode: "return"` appends the removed tab to the end of the top bar (Return
- * button); `mode: null` discards it for good (real close). Focus only ever
- * moves away from whatever's currently shown if the group being edited was
- * itself the active tab and it just stopped existing.
+ * Removes `tab` (a split group member) from its owning `groupTab`'s tree.
+ * `mode: "kill"` drops the tab entirely from `tabs` (real close); `mode:
+ * "return"` clears its `groupId` and leaves it alive, ungrouped. Either way,
+ * if the tree collapses to a single remaining leaf, that survivor is also
+ * ungrouped and the group pseudo-tab is discarded — the survivor's own
+ * top-level array entry is never touched, so it never remounts and its live
+ * PTY/scrollback survive.
  */
-export function applyGroupRemoval(
+export function removeGroupMember(
   state: Pick<TerminalStore, "tabs" | "activeId">,
   groupTab: TerminalTab,
-  result: { tree: SplitTree | null; removed: TerminalTab | null },
-  mode: "return" | null,
+  tab: TerminalTab,
+  mode: "kill" | "return",
 ): Partial<TerminalStore> {
-  const { tree, removed } = result;
-  if (!removed) return {};
+  if (!groupTab.splitGroup) return {};
+  const { tree, removedTabId } = removeLeaf(groupTab.splitGroup, tab.id);
+  if (!removedTabId) return {};
 
   const groupWasActive = state.activeId === groupTab.id;
-  const tail = mode === "return" ? [removed] : [];
+  const withoutMember =
+    mode === "kill"
+      ? state.tabs.filter((t) => t.id !== tab.id)
+      : state.tabs.map((t) => (t.id === tab.id ? { ...t, groupId: undefined } : t));
 
   if (tree === null) {
-    const tabs = state.tabs.filter((t) => t.id !== groupTab.id).concat(tail);
-    const activeId = groupWasActive ? tail[0]?.id ?? tabs[0]?.id ?? null : state.activeId;
+    // No members left; the group itself dissolves.
+    const tabs = withoutMember.filter((t) => t.id !== groupTab.id);
+    const activeId = groupWasActive
+      ? (mode === "return" ? tab.id : (tabs[0]?.id ?? null))
+      : state.activeId;
     return { tabs, activeId };
   }
 
   if (tree.type === "leaf") {
-    // Keep the top-bar slot's id stable across the collapse (it's the React
-    // key in TerminalWorkspace) so the surviving pane's terminal never
-    // remounts and its live PTY/scrollback survive.
-    const survivor: TerminalTab = { ...tree.tab, id: groupTab.id };
-    const tabs = state.tabs.map((t) => (t.id === groupTab.id ? survivor : t)).concat(tail);
-    const activeId = groupWasActive ? survivor.id : state.activeId;
+    // Exactly one member remains; dissolve the group back into that plain tab.
+    const survivorId = tree.tabId;
+    const tabs = withoutMember
+      .filter((t) => t.id !== groupTab.id)
+      .map((t) => (t.id === survivorId ? { ...t, groupId: undefined } : t));
+    const activeId = groupWasActive ? survivorId : state.activeId;
     return { tabs, activeId };
   }
 
-  const tabs = state.tabs
-    .map((t) => (t.id === groupTab.id ? { ...t, splitGroup: tree } : t))
-    .concat(tail);
+  const tabs = withoutMember.map((t) =>
+    t.id === groupTab.id ? { ...t, splitGroup: tree } : t,
+  );
   return { tabs };
 }
