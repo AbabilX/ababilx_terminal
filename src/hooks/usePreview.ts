@@ -18,7 +18,13 @@ export function usePreview(sessionId: string, refocus: () => void) {
   };
 
   const openPreview = async (rawArg: string) => {
-    const arg = rawArg.trim().replace(/^(['"])(.*)\1$/, "$2");
+    const trimmed = rawArg.trim();
+    // Quoted arg: strip the quotes as-is (shell quoting means no backslash-escapes inside).
+    // Unquoted arg: shell-style backslash-escapes (e.g. drag-and-dropped paths with
+    // `\ ` for spaces) never reach a real shell here, so unescape them ourselves.
+    const arg = /^(['"])(.*)\1$/.test(trimmed)
+      ? trimmed.replace(/^(['"])(.*)\1$/, "$2")
+      : trimmed.replace(/\\(.)/g, "$1");
     setPreview({ name: arg, loading: true });
     try {
       const file = await readPreviewFile(sessionId, arg);
