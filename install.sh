@@ -88,9 +88,23 @@ if [ ! -d "$APP_PATH" ]; then
   exit 1
 fi
 
+DEST_APP="/Applications/Abaxana.app"
+
+# Remove any existing install first, otherwise `cp -R` nests the bundle
+# inside the old one (Abaxana.app/Abaxana.app).
+SUDO=""
+if [ -d "$DEST_APP" ]; then
+  echo "==> Removing existing installation at $DEST_APP..."
+  if ! rm -rf "$DEST_APP" 2>/dev/null; then
+    SUDO="sudo"
+    sudo rm -rf "$DEST_APP"
+  fi
+fi
+
 echo "==> Copying Abaxana.app to /Applications..."
-if ! cp -R "$APP_PATH" "/Applications/"; then
+if ! cp -R "$APP_PATH" "/Applications/" 2>/dev/null; then
   echo "Permission denied or copy failed. Trying with sudo..."
+  SUDO="sudo"
   if ! sudo cp -R "$APP_PATH" "/Applications/"; then
     echo "Error: Failed to copy Abaxana.app to /Applications."
     hdiutil unmount "$MOUNT_POINT"
@@ -98,6 +112,15 @@ if ! cp -R "$APP_PATH" "/Applications/"; then
     exit 1
   fi
 fi
+
+# The app is not signed with an Apple Developer ID / notarized, so macOS
+# tags the downloaded bundle with a quarantine attribute and Gatekeeper
+# refuses to launch it ("Abaxana is damaged and can't be opened").
+# Strip the quarantine flag so the app opens directly. Re-apply an ad-hoc
+# signature so the modified bundle stays launchable.
+echo "==> Clearing Gatekeeper quarantine (app is unsigned)..."
+$SUDO xattr -dr com.apple.quarantine "$DEST_APP" 2>/dev/null || true
+$SUDO codesign --force --deep --sign - "$DEST_APP" 2>/dev/null || true
 
 # 6. Unmount and Clean
 echo "==> Cleaning up mount and temporary files..."
