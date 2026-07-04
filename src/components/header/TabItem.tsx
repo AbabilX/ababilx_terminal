@@ -18,7 +18,10 @@ interface TabItemProps {
   onRename: (title: string) => void;
   onSetColor: (color: string | null) => void;
   onDragStart: (e: React.DragEvent) => void;
-  onDragEnter: (e: React.DragEvent) => void;
+  /** `"reorder"` (dropped near an edge) moves the tab; `"merge"` (dropped near
+   * the center) drags it into a split with this tab — either way regardless
+   * of which tab is currently active/visible. */
+  onDropTab: (draggedId: string, zone: "reorder" | "merge") => void;
   onDragEnd: () => void;
 }
 
@@ -31,13 +34,20 @@ export function TabItem({
   onRename,
   onSetColor,
   onDragStart,
-  onDragEnter,
+  onDropTab,
   onDragEnd,
 }: TabItemProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(tab.title);
+  const [hoverZone, setHoverZone] = useState<"reorder" | "merge" | null>(null);
+
+  const zoneFromEvent = (e: React.DragEvent<HTMLDivElement>): "reorder" | "merge" => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    return ratio < 0.2 || ratio > 0.8 ? "reorder" : "merge";
+  };
 
   useEffect(() => {
     if (!menu) return;
@@ -69,8 +79,25 @@ export function TabItem({
       <div
         draggable={!editing}
         onDragStart={onDragStart}
-        onDragEnter={onDragEnter}
-        onDragOver={(e) => e.preventDefault()}
+        onDragOver={(e) => {
+          if (!e.dataTransfer.types.includes("text/tab-id")) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          setHoverZone(zoneFromEvent(e));
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+            setHoverZone(null);
+          }
+        }}
+        onDrop={(e) => {
+          const draggedId = e.dataTransfer.getData("text/tab-id");
+          if (draggedId && draggedId !== tab.id && hoverZone) {
+            e.preventDefault();
+            onDropTab(draggedId, hoverZone);
+          }
+          setHoverZone(null);
+        }}
         onDragEnd={onDragEnd}
         onClick={onSelect}
         onContextMenu={(e) => {
@@ -83,6 +110,12 @@ export function TabItem({
         title={tab.splitGroup ? "Split view — contains multiple panes" : undefined}
         className={`group flex h-7 min-w-[120px] max-w-[200px] cursor-pointer select-none items-center gap-2 rounded-md border px-2.5 text-xs transition-colors ${
           dragging ? "opacity-40" : ""
+        } ${
+          hoverZone === "merge"
+            ? "ring-2 ring-sky-400/70"
+            : hoverZone === "reorder"
+              ? "outline outline-2 outline-offset-1 outline-sky-400/50"
+              : ""
         } ${
           active
             ? "bg-white/[0.09] text-gray-100 shadow-sm"

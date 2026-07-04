@@ -1,8 +1,18 @@
 import type { SplitDirection, SplitTree, TerminalTab } from "../../types/terminal";
-import { findGroupTabContaining, makeBranch, replaceLeafWithBranch } from "../splitTree";
+import {
+  computeSplitLayout,
+  findGroupTabContaining,
+  makeBranch,
+  replaceLeafWithBranch,
+} from "../splitTree";
 import type { TerminalStore } from "./types";
 
-/** Drops `draggedTabId` onto the `targetTabId` pane's edge, splitting it into/within a group. */
+/**
+ * Drops `draggedTabId` onto `targetTabId` — either a real tab's pane/pill
+ * (its own edge) or a group pseudo-tab's pill directly (dropped on the
+ * "Split" pill itself, not one specific member) — splitting it into/within
+ * a group.
+ */
 export function dropTabOnPane(
   state: Pick<TerminalStore, "tabs" | "activeId">,
   targetTabId: string,
@@ -19,12 +29,22 @@ export function dropTabOnPane(
 
   const draggedLeaf: SplitTree = { type: "leaf", tabId: draggedTab.id };
 
-  // Dropping onto a pane that's already part of an existing group extends that group.
-  const existingGroup = findGroupTabContaining(state.tabs, targetTabId);
+  // Dropping onto a member pane, or directly onto the group's own pill,
+  // extends that existing group.
+  const existingGroup = targetTab.splitGroup
+    ? targetTab
+    : findGroupTabContaining(state.tabs, targetTabId);
   if (existingGroup?.splitGroup) {
+    // Dropped on the group's pill itself (not one specific member) — anchor
+    // the new leaf against whichever member happens to be first in the tree.
+    const anchorTabId = targetTab.splitGroup
+      ? computeSplitLayout(existingGroup.splitGroup).leaves[0]?.tabId
+      : targetTabId;
+    if (!anchorTabId) return {};
+
     const updatedTree = replaceLeafWithBranch(
       existingGroup.splitGroup,
-      targetTabId,
+      anchorTabId,
       direction,
       draggedLeaf,
     );

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Add01Icon } from "@hugeicons/core-free-icons";
@@ -17,9 +17,9 @@ export function AppHeader() {
     renameTab,
     setTabBorderColor,
     reorderTab,
+    dropTabOnPane,
   } = useTerminalStore();
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const lastOverId = useRef<string | null>(null);
 
   return (
     <div
@@ -44,25 +44,16 @@ export function AppHeader() {
               e.dataTransfer.setData("text/tab-id", tab.id);
               e.dataTransfer.setData("text/plain", tab.id);
               e.dataTransfer.effectAllowed = "move";
-              lastOverId.current = tab.id;
               setDraggingId(tab.id);
             }}
-            onDragEnter={(e) => {
-              const draggedId =
-                draggingId || e.dataTransfer.getData("text/tab-id");
-              if (
-                draggedId &&
-                draggedId !== tab.id &&
-                lastOverId.current !== tab.id
-              ) {
-                lastOverId.current = tab.id;
+            onDropTab={(draggedId, zone) => {
+              if (zone === "merge") {
+                dropTabOnPane(tab.id, draggedId, "right");
+              } else {
                 reorderTab(draggedId, tab.id);
               }
             }}
-            onDragEnd={() => {
-              setDraggingId(null);
-              lastOverId.current = null;
-            }}
+            onDragEnd={() => setDraggingId(null)}
           />
         ))}
         <button
