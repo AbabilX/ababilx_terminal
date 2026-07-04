@@ -10,8 +10,9 @@ const DEFAULT_SETTINGS: &str = r##"{
   },
   "appearance": {
     "theme": "dark",
-    "opacity": 1,
-    "backgroundBlur": false
+    "background": "#0d1117",
+    "opacity": 0.94,
+    "blur": 24
   },
   "terminal": {
     "fontFamily": "JetBrains Mono, Consolas, monospace",
@@ -79,6 +80,24 @@ fn ensure_init_script(app: &AppHandle) -> Result<PathBuf, String> {
         fs::write(&path, DEFAULT_INIT_PS1).map_err(|e| e.to_string())?;
     }
     Ok(path)
+}
+
+/// appearance.blur from settings.json (px). 0 disables the window blur;
+/// the old boolean `backgroundBlur: true` is honored as 24.
+pub fn blur_radius(app: &AppHandle) -> f64 {
+    let parsed: Option<serde_json::Value> = ensure_settings(app)
+        .ok()
+        .and_then(|path| fs::read_to_string(path).ok())
+        .and_then(|raw| serde_json::from_str(&raw).ok());
+    let appearance = parsed.as_ref().and_then(|v| v.get("appearance"));
+    if let Some(radius) = appearance.and_then(|a| a.get("blur")).and_then(|b| b.as_f64()) {
+        return radius.max(0.0);
+    }
+    let legacy = appearance
+        .and_then(|a| a.get("backgroundBlur"))
+        .and_then(|b| b.as_bool())
+        .unwrap_or(false);
+    if legacy { 24.0 } else { 0.0 }
 }
 
 /// Shell program + args from settings.json; "auto" resolves the default shell.

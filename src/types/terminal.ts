@@ -14,8 +14,12 @@ export interface Keybindings {
 
 export interface AppearanceSettings {
   theme: string;
+  /** Window background as a hex code, e.g. "#0d1117". */
+  background: string;
+  /** Background opacity 0–1; below 1 the desktop shows through. */
   opacity: number;
-  backgroundBlur: boolean;
+  /** Background blur in px; 0 disables the system blur behind the window. */
+  blur: number;
 }
 
 export interface TerminalSettings {
@@ -35,8 +39,9 @@ export interface AppSettings {
 export const DEFAULT_SETTINGS: AppSettings = {
   appearance: {
     theme: "dark",
-    opacity: 1,
-    backgroundBlur: false,
+    background: "#0d1117",
+    opacity: 0.94,
+    blur: 24,
   },
   terminal: {
     fontFamily: "JetBrains Mono, Consolas, monospace",

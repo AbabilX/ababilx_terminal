@@ -10,6 +10,18 @@ pub fn run() {
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 window.set_decorations(false)?;
+                let blur = commands::settings::blur_radius(app.handle());
+                if blur > 0.0 {
+                    #[cfg(target_os = "macos")]
+                    let _ = window_vibrancy::apply_vibrancy(
+                        &window,
+                        window_vibrancy::NSVisualEffectMaterial::HudWindow,
+                        None,
+                        None,
+                    );
+                    #[cfg(target_os = "windows")]
+                    let _ = window_vibrancy::apply_acrylic(&window, Some((18, 18, 18, 125)));
+                }
             }
             Ok(())
         })

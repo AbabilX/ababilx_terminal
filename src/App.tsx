@@ -4,12 +4,14 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { AppHeader } from "./components/AppHeader";
 import { Terminal } from "./components/terminal";
 import { matchesKeybind } from "./lib/keybinds";
+import { hexToRgba } from "./lib/color";
 import { openSettingsFile, useSettingsStore } from "./store/settings";
 import { useTerminalStore } from "./store/terminal";
 
 function App() {
   const { tabs, activeId } = useTerminalStore();
   const loadSettings = useSettingsStore((s) => s.load);
+  const appearance = useSettingsStore((s) => s.settings.appearance);
 
   useEffect(() => {
     loadSettings();
@@ -47,7 +49,12 @@ function App() {
   }, []);
 
   return (
-    <main className="flex h-screen w-screen flex-col bg-[#0d1117]">
+    <main
+      className="flex h-screen w-screen flex-col overflow-hidden rounded-xl border border-white/10"
+      style={{
+        background: hexToRgba(appearance.background, appearance.opacity),
+      }}
+    >
       <AppHeader />
       <div className="relative min-h-0 flex-1">
         {tabs.map((tab) => (
@@ -60,8 +67,8 @@ function App() {
             {tab.panes.map((paneId, i) => (
               <div
                 key={paneId}
-                className={`min-w-0 flex-1 bg-[#0d1117] p-2 ${
-                  i > 0 ? "border-l border-[#21262d]" : ""
+                className={`min-w-0 flex-1 p-2 ${
+                  i > 0 ? "border-l border-white/10" : ""
                 }`}
               >
                 <Terminal sessionId={paneId} visible={tab.id === activeId} />

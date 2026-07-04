@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { TerminalTab } from "../types/terminal";
+import { newTab } from "./tabNames";
 
 interface TerminalStore {
   tabs: TerminalTab[];
@@ -13,41 +14,6 @@ interface TerminalStore {
   closePane: (paneId: string) => void;
   /** Moves the dragged tab to sit just before the target tab. */
   reorderTab: (draggedId: string, targetId: string) => void;
-}
-
-const FLOWER_NAMES = [
-  "Rose",
-  "Tulip",
-  "Lily",
-  "Daisy",
-  "Orchid",
-  "Jasmine",
-  "Marigold",
-  "Lotus",
-  "Iris",
-  "Poppy",
-  "Peony",
-  "Dahlia",
-  "Camellia",
-  "Hibiscus",
-  "Magnolia",
-  "Azalea",
-  "Zinnia",
-  "Violet",
-  "Sunflower",
-  "Lavender",
-];
-
-function randomFlowerName(): string {
-  return FLOWER_NAMES[Math.floor(Math.random() * FLOWER_NAMES.length)];
-}
-
-function newTab(): TerminalTab {
-  return {
-    id: crypto.randomUUID(),
-    title: randomFlowerName(),
-    panes: [crypto.randomUUID()],
-  };
 }
 
 const initial = newTab();
