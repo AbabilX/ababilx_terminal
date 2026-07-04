@@ -17,7 +17,7 @@ pub fn run() {
                         &window,
                         window_vibrancy::NSVisualEffectMaterial::HudWindow,
                         None,
-                        None,
+                        Some(16.0),
                     );
                     #[cfg(target_os = "windows")]
                     let _ = window_vibrancy::apply_acrylic(&window, Some((18, 18, 18, 125)));

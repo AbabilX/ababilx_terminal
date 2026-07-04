@@ -66,7 +66,7 @@ function App() {
 
   return (
     <main
-      className="flex h-screen w-screen flex-col overflow-hidden rounded-xl border border-white/10"
+      className="flex h-screen w-screen flex-col overflow-hidden rounded-[16px] border border-white/10"
       style={appStyle}
     >
       {!hideHeader && !settingsOpen && <AppHeader />}
