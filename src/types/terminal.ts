@@ -1,8 +1,16 @@
 export interface TerminalTab {
   id: string;
   title: string;
+  borderColor?: string;
   /** Each pane is an independent PTY session; rendered side by side. */
   panes: string[];
+}
+
+export type SplitDirection = "left" | "right" | "top" | "bottom";
+
+export interface SplitLayout {
+  direction: SplitDirection;
+  tabs: [TerminalTab, TerminalTab];
 }
 
 export interface Keybindings {

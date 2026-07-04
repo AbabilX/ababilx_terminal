@@ -8,8 +8,16 @@ import { WindowControls } from "./header/WindowControls";
 import { useTerminalStore } from "../store/terminal";
 
 export function AppHeader() {
-  const { tabs, activeId, addTab, closeTab, setActive, reorderTab } =
-    useTerminalStore();
+  const {
+    tabs,
+    activeId,
+    addTab,
+    closeTab,
+    setActive,
+    renameTab,
+    setTabBorderColor,
+    reorderTab,
+  } = useTerminalStore();
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const lastOverId = useRef<string | null>(null);
 
@@ -30,20 +38,25 @@ export function AppHeader() {
             dragging={draggingId === tab.id}
             onSelect={() => setActive(tab.id)}
             onClose={() => closeTab(tab.id)}
+            onRename={(title) => renameTab(tab.id, title)}
+            onSetColor={(color) => setTabBorderColor(tab.id, color)}
             onDragStart={(e) => {
               e.dataTransfer.setData("text/tab-id", tab.id);
+              e.dataTransfer.setData("text/plain", tab.id);
               e.dataTransfer.effectAllowed = "move";
               lastOverId.current = tab.id;
               setDraggingId(tab.id);
             }}
-            onDragEnter={() => {
+            onDragEnter={(e) => {
+              const draggedId =
+                draggingId || e.dataTransfer.getData("text/tab-id");
               if (
-                draggingId &&
-                draggingId !== tab.id &&
+                draggedId &&
+                draggedId !== tab.id &&
                 lastOverId.current !== tab.id
               ) {
                 lastOverId.current = tab.id;
-                reorderTab(draggingId, tab.id);
+                reorderTab(draggedId, tab.id);
               }
             }}
             onDragEnd={() => {

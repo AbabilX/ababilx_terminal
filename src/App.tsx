@@ -3,7 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { AppHeader } from "./components/AppHeader";
 import { SettingsPage } from "./components/settings";
-import { Terminal } from "./components/terminal";
+import { TerminalWorkspace } from "./components/terminal/TerminalWorkspace";
 import { matchesKeybind } from "./lib/keybinds";
 import { hexToRgba } from "./lib/color";
 import { useSettingsStore } from "./store/settings";
@@ -13,7 +13,7 @@ import { useTerminalStore } from "./store/terminal";
 const SETTINGS_REFRESH_MS = 750;
 
 function App() {
-  const { tabs, activeId } = useTerminalStore();
+  const { tabs, splitLayout } = useTerminalStore();
   const loadSettings = useSettingsStore((s) => s.load);
   const settingsLoaded = useSettingsStore((s) => s.loaded);
   const appearance = useSettingsStore((s) => s.settings.appearance);
@@ -33,10 +33,10 @@ function App() {
 
   // Close the window when the last tab is gone.
   useEffect(() => {
-    if (tabs.length === 0) {
+    if (tabs.length === 0 && !splitLayout) {
       getCurrentWindow().close();
     }
-  }, [tabs.length]);
+  }, [splitLayout, tabs.length]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -72,26 +72,7 @@ function App() {
         {settingsOpen ? (
           <SettingsPage onClose={closeSettings} />
         ) : (
-          settingsLoaded &&
-          tabs.map((tab) => (
-            <div
-              key={tab.id}
-              className={`absolute inset-0 flex ${
-                tab.id === activeId ? "visible" : "invisible"
-              }`}
-            >
-              {tab.panes.map((paneId, i) => (
-                <div
-                  key={paneId}
-                  className={`min-w-0 flex-1 p-2 ${
-                    i > 0 ? "border-l border-white/10" : ""
-                  }`}
-                >
-                  <Terminal sessionId={paneId} visible={tab.id === activeId} />
-                </div>
-              ))}
-            </div>
-          ))
+          settingsLoaded && <TerminalWorkspace />
         )}
       </div>
     </main>
