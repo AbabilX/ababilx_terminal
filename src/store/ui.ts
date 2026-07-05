@@ -5,6 +5,8 @@ interface UiStore {
   openSettings: () => void;
   closeSettings: () => void;
   toggleSettings: () => void;
+  isFullscreen: boolean;
+  setFullscreen: (value: boolean) => void;
 }
 
 export const useUiStore = create<UiStore>((set) => ({
@@ -12,4 +14,6 @@ export const useUiStore = create<UiStore>((set) => ({
   openSettings: () => set({ settingsOpen: true }),
   closeSettings: () => set({ settingsOpen: false }),
   toggleSettings: () => set((s) => ({ settingsOpen: !s.settingsOpen })),
+  isFullscreen: false,
+  setFullscreen: (value) => set({ isFullscreen: value }),
 }));

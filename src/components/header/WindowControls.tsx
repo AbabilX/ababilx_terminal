@@ -7,6 +7,8 @@ import {
   MinusSignIcon,
 } from "@hugeicons/core-free-icons";
 
+import { useUiStore } from "../../store/ui";
+
 const win = getCurrentWindow();
 
 const dotClass =
@@ -15,8 +17,17 @@ const dotClass =
 const glyphClass =
   "text-black/60 opacity-0 transition-opacity group-hover/traffic:opacity-100";
 
-/** macOS-style window controls: red close / yellow minimize / green maximize. */
+/** macOS-style window controls: red close / yellow minimize / green fullscreen. */
 export function WindowControls() {
+  const isFullscreen = useUiStore((s) => s.isFullscreen);
+  const setFullscreen = useUiStore((s) => s.setFullscreen);
+
+  const toggleFullscreen = () => {
+    const next = !isFullscreen;
+    setFullscreen(next);
+    win.setFullscreen(next);
+  };
+
   return (
     <div className="group/traffic flex shrink-0 items-center gap-2">
       <button
@@ -45,8 +56,8 @@ export function WindowControls() {
       </button>
       <button
         className={`${dotClass} bg-[#28c840] hover:bg-[#28c840]`}
-        onClick={() => win.toggleMaximize()}
-        aria-label="Maximize"
+        onClick={toggleFullscreen}
+        aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
       >
         <HugeiconsIcon
           icon={Maximize01Icon}

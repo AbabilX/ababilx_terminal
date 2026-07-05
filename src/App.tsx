@@ -5,6 +5,7 @@ import { AppHeader } from "./components/AppHeader";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { SettingsPage } from "./components/settings";
 import { TerminalWorkspace } from "./components/terminal/TerminalWorkspace";
+import { useWindowFullscreenSync } from "./hooks/useWindowFullscreenSync";
 import { matchesKeybind } from "./lib/keybinds";
 import { hexToRgba } from "./lib/color";
 import { useSettingsStore } from "./store/settings";
@@ -19,10 +20,14 @@ function App() {
   const appearance = useSettingsStore((s) => s.settings.appearance);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const closeSettings = useUiStore((s) => s.closeSettings);
+  const isFullscreen = useUiStore((s) => s.isFullscreen);
   const checkForUpdate = useUpdateStore((s) => s.check);
   const [headerRevealed, setHeaderRevealed] = useState(false);
+  // Header visibility is controlled only by the user's own setting —
+  // entering native fullscreen never hides it on its own.
   const hideHeader = appearance.hideHeader && !settingsOpen;
   const appBackground = hexToRgba(appearance.background, appearance.opacity);
+  useWindowFullscreenSync();
   const appStyle: CSSProperties & { "--app-background": string } = {
     "--app-background": appBackground,
     background: appBackground,
@@ -59,6 +64,13 @@ function App() {
       const { keybindings } = useSettingsStore.getState().settings;
       const store = useTerminalStore.getState();
 
+      if (e.key === "Escape" && useUiStore.getState().isFullscreen) {
+        e.preventDefault();
+        useUiStore.getState().setFullscreen(false);
+        getCurrentWindow().setFullscreen(false);
+        return;
+      }
+
       if (matchesKeybind(e, keybindings.newTab)) {
         e.preventDefault();
         store.addTab();
@@ -84,7 +96,9 @@ function App() {
 
   return (
     <main
-      className="flex h-screen w-screen flex-col overflow-hidden rounded-[16px] border border-white/10"
+      className={`flex h-screen w-screen flex-col overflow-hidden ${
+        isFullscreen ? "" : "rounded-[16px] border border-white/10"
+      }`}
       style={appStyle}
     >
       {!hideHeader && !settingsOpen && <AppHeader />}
