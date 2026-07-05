@@ -16,6 +16,12 @@ Run the following command in your terminal to download, mount, and install the a
 curl -fsSL https://raw.githubusercontent.com/AbabilX/ababilx_terminal/main/install.sh | bash
 ```
 
+### 🐧 Linux (Debian/Ubuntu, Fedora, & others)
+Run the following command in your terminal to download and install the package automatically (`.deb`, `.rpm`, or `.AppImage` depending on your distro):
+```bash
+curl -fsSL https://raw.githubusercontent.com/AbabilX/ababilx_terminal/main/install-linux.sh | bash
+```
+
 ### 🏁 Windows (PowerShell)
 Open PowerShell and run the following command to download and run the installer package:
 ```powershell
