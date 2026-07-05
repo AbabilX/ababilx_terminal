@@ -79,8 +79,8 @@ function App() {
       style={appStyle}
     >
       {!hideHeader && !settingsOpen && <AppHeader />}
-      <div className="relative min-h-0 flex-1 bg-[var(--app-background)]">
-        {hideHeader && (
+      <div className="relative min-h-0 flex-1">
+        {hideHeader && !settingsOpen && (
           <div
             className="absolute inset-x-0 top-0 z-30"
             onMouseEnter={() => setHeaderRevealed(true)}
@@ -96,10 +96,11 @@ function App() {
             <div className="h-2 w-full" />
           </div>
         )}
-        {settingsOpen ? (
-          <SettingsPage onClose={closeSettings} />
-        ) : (
-          settingsLoaded && <TerminalWorkspace />
+        {settingsLoaded && <TerminalWorkspace />}
+        {settingsOpen && (
+          <div className="absolute inset-0 z-40">
+            <SettingsPage onClose={closeSettings} />
+          </div>
         )}
       </div>
     </main>

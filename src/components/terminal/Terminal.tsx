@@ -48,7 +48,7 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
     <>
       <div
         ref={containerRef}
-        className="relative h-full w-full overflow-hidden bg-[var(--app-background)]"
+        className="relative h-full w-full overflow-hidden"
         onClick={focusPane}
         onFocusCapture={() => setFocusedPane(sessionId)}
       />
