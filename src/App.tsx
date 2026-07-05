@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { AppHeader } from "./components/AppHeader";
+import { UpdateBanner } from "./components/UpdateBanner";
 import { SettingsPage } from "./components/settings";
 import { TerminalWorkspace } from "./components/terminal/TerminalWorkspace";
 import { matchesKeybind } from "./lib/keybinds";
@@ -9,6 +10,7 @@ import { hexToRgba } from "./lib/color";
 import { useSettingsStore } from "./store/settings";
 import { useUiStore } from "./store/ui";
 import { useTerminalStore } from "./store/terminal";
+import { useUpdateStore } from "./store/update";
 
 function App() {
   const { tabs } = useTerminalStore();
@@ -17,6 +19,7 @@ function App() {
   const appearance = useSettingsStore((s) => s.settings.appearance);
   const settingsOpen = useUiStore((s) => s.settingsOpen);
   const closeSettings = useUiStore((s) => s.closeSettings);
+  const checkForUpdate = useUpdateStore((s) => s.check);
   const [headerRevealed, setHeaderRevealed] = useState(false);
   const hideHeader = appearance.hideHeader && !settingsOpen;
   const appBackground = hexToRgba(appearance.background, appearance.opacity);
@@ -37,6 +40,12 @@ function App() {
       unlisten.then((off) => off());
     };
   }, [loadSettings]);
+
+  // Check GitHub for a newer release once per launch. Silent no-op if
+  // offline or already up to date; dismissal is remembered per version.
+  useEffect(() => {
+    checkForUpdate();
+  }, [checkForUpdate]);
 
   // Close the window when the last tab is gone.
   useEffect(() => {
@@ -79,6 +88,7 @@ function App() {
       style={appStyle}
     >
       {!hideHeader && !settingsOpen && <AppHeader />}
+      {!settingsOpen && <UpdateBanner />}
       <div className="relative min-h-0 flex-1">
         {hideHeader && !settingsOpen && (
           <div

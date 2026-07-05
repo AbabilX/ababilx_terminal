@@ -44,7 +44,8 @@ pub fn run() {
             commands::settings::read_settings,
             commands::settings::write_settings,
             commands::settings::open_settings,
-            commands::preview::read_preview_file
+            commands::preview::read_preview_file,
+            commands::update::get_platform
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
