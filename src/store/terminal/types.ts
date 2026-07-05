@@ -3,9 +3,11 @@ import type { SplitDirection, TerminalTab } from "../../types/terminal";
 export interface TerminalStore {
   tabs: TerminalTab[];
   activeId: string | null;
+  focusedPaneId: string | null;
   addTab: () => void;
   closeTab: (id: string) => void;
   setActive: (id: string) => void;
+  setFocusedPane: (paneId: string) => void;
   renameTab: (id: string, title: string) => void;
   setTabBorderColor: (id: string, color: string | null) => void;
   /** Adds an independent PTY pane to the right of the active tab's panes (no-op on group tabs). */

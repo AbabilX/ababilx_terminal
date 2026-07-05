@@ -1,9 +1,15 @@
 import { newTab } from "../tabNames";
+import { firstPaneForActive } from "./focus";
 import type { SetTerminalState, TerminalStore } from "./types";
 
 type TabActions = Pick<
   TerminalStore,
-  "addTab" | "setActive" | "renameTab" | "setTabBorderColor" | "reorderTab"
+  | "addTab"
+  | "setActive"
+  | "setFocusedPane"
+  | "renameTab"
+  | "setTabBorderColor"
+  | "reorderTab"
 >;
 
 /** Plain top-bar tab management: no split-tree awareness. */
@@ -12,10 +18,20 @@ export function createTabActions(set: SetTerminalState): TabActions {
     addTab: () =>
       set((state) => {
         const tab = newTab();
-        return { tabs: [...state.tabs, tab], activeId: tab.id };
+        return {
+          tabs: [...state.tabs, tab],
+          activeId: tab.id,
+          focusedPaneId: tab.panes[0] ?? null,
+        };
       }),
 
-    setActive: (id) => set({ activeId: id }),
+    setActive: (id) =>
+      set((state) => ({
+        activeId: id,
+        focusedPaneId: firstPaneForActive(state.tabs, id),
+      })),
+
+    setFocusedPane: (paneId) => set({ focusedPaneId: paneId }),
 
     renameTab: (id, title) =>
       set((state) => {

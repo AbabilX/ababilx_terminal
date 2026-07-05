@@ -12,6 +12,7 @@ const initial = newTab();
 export const useTerminalStore = create<TerminalStore>((set) => ({
   tabs: [initial],
   activeId: initial.id,
+  focusedPaneId: initial.panes[0] ?? null,
   ...createTabActions(set),
   ...createSplitActions(set),
   ...createCloseActions(set),

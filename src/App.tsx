@@ -58,7 +58,11 @@ function App() {
         store.splitRight();
       } else if (matchesKeybind(e, keybindings.closeTab)) {
         e.preventDefault();
-        if (store.activeId) store.closeTab(store.activeId);
+        if (store.focusedPaneId) {
+          store.closePane(store.focusedPaneId);
+        } else if (store.activeId) {
+          store.closeTab(store.activeId);
+        }
       } else if (matchesKeybind(e, keybindings.settings)) {
         e.preventDefault();
         useUiStore.getState().toggleSettings();

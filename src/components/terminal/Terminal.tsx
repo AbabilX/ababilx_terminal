@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { PreviewDialog } from "./PreviewDialog";
 import { usePreview } from "../../hooks/usePreview";
 import { useTerminalSession } from "../../hooks/useTerminalSession";
+import { useTerminalStore } from "../../store/terminal";
 
 import "@xterm/xterm/css/xterm.css";
 
@@ -13,6 +14,7 @@ interface TerminalViewProps {
 
 export default function TerminalView({ sessionId, visible }: TerminalViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const setFocusedPane = useTerminalStore((state) => state.setFocusedPane);
 
   const { preview, previewRef, openPreview, closePreview, showUsage } =
     usePreview(sessionId, () => terminalRef.current?.focus());
@@ -32,16 +34,23 @@ export default function TerminalView({ sessionId, visible }: TerminalViewProps) 
   useEffect(() => {
     if (visible) {
       fitRef.current?.fit();
+      setFocusedPane(sessionId);
       terminalRef.current?.focus();
     }
-  }, [visible, fitRef, terminalRef]);
+  }, [visible, fitRef, terminalRef, sessionId, setFocusedPane]);
+
+  const focusPane = () => {
+    setFocusedPane(sessionId);
+    terminalRef.current?.focus();
+  };
 
   return (
     <>
       <div
         ref={containerRef}
         className="relative h-full w-full overflow-hidden bg-[var(--app-background)]"
-        onClick={() => terminalRef.current?.focus()}
+        onClick={focusPane}
+        onFocusCapture={() => setFocusedPane(sessionId)}
       />
       {preview && <PreviewDialog preview={preview} onClose={closePreview} />}
     </>

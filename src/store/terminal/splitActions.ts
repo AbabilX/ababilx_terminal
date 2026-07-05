@@ -12,13 +12,20 @@ type SplitActions = Pick<
 export function createSplitActions(set: SetTerminalState): SplitActions {
   return {
     splitRight: () =>
-      set((state) => ({
-        tabs: state.tabs.map((tab) =>
-          tab.id === state.activeId && !tab.splitGroup
-            ? { ...tab, panes: [...tab.panes, crypto.randomUUID()] }
-            : tab,
-        ),
-      })),
+      set((state) => {
+        const activeTab = state.tabs.find((tab) => tab.id === state.activeId);
+        if (!activeTab || activeTab.splitGroup) return {};
+
+        const paneId = crypto.randomUUID();
+        return {
+          tabs: state.tabs.map((tab) =>
+            tab.id === state.activeId && !tab.splitGroup
+              ? { ...tab, panes: [...tab.panes, paneId] }
+              : tab,
+          ),
+          focusedPaneId: paneId,
+        };
+      }),
 
     dropTabOnPane: (targetTabId, draggedTabId, direction) =>
       set((state) => dropTabOnPane(state, targetTabId, draggedTabId, direction)),
