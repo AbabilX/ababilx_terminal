@@ -63,7 +63,7 @@ export function TabItem({
     }
   }, [editing, tab.title]);
 
-  const borderColor = tab.borderColor ?? "rgba(255,255,255,0.1)";
+  const borderColor = tab.borderColor ?? "var(--ui-default-border-color)";
   const style: CSSProperties = {
     borderColor,
     boxShadow: active ? `inset 0 -2px 0 ${borderColor}` : undefined,
@@ -118,20 +118,20 @@ export function TabItem({
               : ""
         } ${
           active
-            ? "bg-white/[0.09] text-gray-100 shadow-sm"
-            : "text-gray-500 hover:bg-white/[0.04] hover:text-gray-300"
+            ? "bg-[var(--ui-active-surface)] text-[var(--ui-text)] shadow-sm"
+            : "text-[var(--ui-text-faint)] hover:bg-[var(--ui-surface)] hover:text-[var(--ui-text-muted)]"
         }`}
       >
         <HugeiconsIcon
           icon={tab.splitGroup ? DashboardSquare03Icon : TerminalIcon}
           size={13}
-          className={active ? "shrink-0 text-gray-300" : "shrink-0"}
+          className={active ? "shrink-0 text-[var(--ui-text-secondary)]" : "shrink-0"}
           strokeWidth={2}
         />
         {editing ? (
           <input
             ref={inputRef}
-            className="min-w-0 flex-1 rounded bg-black/30 px-1 py-0.5 text-xs text-white outline-none ring-1 ring-white/20"
+            className="min-w-0 flex-1 rounded bg-[var(--ui-overlay-strong-bg)] px-1 py-0.5 text-xs text-[var(--ui-text-strong)] outline-none ring-1 ring-[var(--ui-overlay-ring)]"
             value={draftTitle}
             onChange={(e) => setDraftTitle(e.target.value)}
             onClick={(e) => e.stopPropagation()}
@@ -145,7 +145,7 @@ export function TabItem({
           <span className="truncate">{tab.title}</span>
         )}
         <button
-          className="ml-auto flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded text-gray-500 opacity-0 transition-opacity hover:bg-white/10 hover:text-white group-hover:opacity-100"
+          className="ml-auto flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded text-[var(--ui-text-faint)] opacity-0 transition-opacity hover:bg-[var(--ui-hover-strong)] hover:text-[var(--ui-text-strong)] group-hover:opacity-100"
           onClick={(e) => {
             e.stopPropagation();
             onClose();

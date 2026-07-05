@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
-import { themeBackground } from "../lib/themes";
+import { isThemeDefaultBackground, themeBackground } from "../lib/themes";
 import {
   DEFAULT_SETTINGS,
   type AppSettings,
@@ -23,13 +23,14 @@ function mergeAppearance(parsed: Record<string, unknown>) {
     ...DEFAULT_SETTINGS.appearance,
     ...parsed,
   };
-  const usesDefaultBackground =
-    !parsed.background ||
-    parsed.background === DEFAULT_SETTINGS.appearance.background;
-
-  if (
-    appearance.theme !== DEFAULT_SETTINGS.appearance.theme &&
-    usesDefaultBackground
+  // Fill/migrate only built-in theme backgrounds. Custom background colors are
+  // preserved even when the selected theme changes.
+  if (parsed.background === undefined) {
+    appearance.background = themeBackground(appearance.theme);
+  } else if (
+    isThemeDefaultBackground(appearance.theme, String(parsed.background)) &&
+    String(parsed.background).trim().toLowerCase() !==
+      themeBackground(appearance.theme).toLowerCase()
   ) {
     appearance.background = themeBackground(appearance.theme);
   }

@@ -10,11 +10,11 @@ export function SettingsField({
   children,
 }: SettingsFieldProps) {
   return (
-    <div className="flex flex-col gap-1 border-b border-white/[0.06] py-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-1 border-b border-[var(--ui-border-subtle)] py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1 sm:pr-4">
-        <div className="text-sm text-gray-200">{label}</div>
+        <div className="text-sm text-[var(--ui-text-secondary)]">{label}</div>
         {description && (
-          <div className="mt-0.5 text-xs text-gray-500">{description}</div>
+          <div className="mt-0.5 text-xs text-[var(--ui-text-faint)]">{description}</div>
         )}
       </div>
       <div className="shrink-0">{children}</div>
@@ -23,7 +23,7 @@ export function SettingsField({
 }
 
 const inputClass =
-  "rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-sm text-gray-100 outline-none focus:border-white/20";
+  "rounded-md border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2.5 py-1.5 text-sm text-[var(--ui-text)] outline-none focus:border-[var(--ui-hover-strong)]";
 
 export function TextInput({
   value,
@@ -93,7 +93,7 @@ export function SelectInput<T extends string>({
       className={`${inputClass} ${className}`}
     >
       {options.map((o) => (
-        <option key={o.value} value={o.value} className="bg-gray-900">
+        <option key={o.value} value={o.value} className="bg-[var(--ui-panel)]">
           {o.label}
         </option>
       ))}
@@ -115,7 +115,7 @@ export function ToggleInput({
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative h-6 w-11 rounded-full transition-colors ${
-        checked ? "bg-blue-500" : "bg-white/15"
+        checked ? "bg-blue-500" : "bg-[var(--ui-toggle-off)]"
       }`}
     >
       <span

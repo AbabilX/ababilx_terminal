@@ -9,7 +9,7 @@ export function PreviewMedia({ preview }: { preview: PreviewState }) {
   return (
     <div className="flex min-h-24 min-w-64 items-center justify-center overflow-auto">
       {preview.loading && (
-        <span className="flex items-center gap-2.5 p-8 text-sm text-gray-400">
+        <span className="flex items-center gap-2.5 p-8 text-sm text-[var(--ui-text-muted)]">
           <HugeiconsIcon
             icon={Loading03Icon}
             size={16}
@@ -20,7 +20,7 @@ export function PreviewMedia({ preview }: { preview: PreviewState }) {
         </span>
       )}
       {preview.error && (
-        <span className="flex max-w-[60vw] items-start gap-2.5 p-6 font-mono text-sm text-red-400">
+        <span className="flex max-w-[60vw] items-start gap-2.5 p-6 font-mono text-sm text-[var(--ui-danger-text)]">
           <HugeiconsIcon
             icon={Alert02Icon}
             size={16}

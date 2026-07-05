@@ -26,7 +26,7 @@ export function AppHeader() {
   return (
     <div
       data-tauri-drag-region
-      className="flex h-10 shrink-0 items-center gap-2 border-b border-white/[0.06] px-3"
+      className="flex h-10 shrink-0 items-center gap-2 border-b border-[var(--ui-border-subtle)] px-3"
     >
       <WindowControls />
       <div
@@ -60,7 +60,7 @@ export function AppHeader() {
           />
         ))}
         <button
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-white/[0.06] hover:text-gray-200"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--ui-text-faint)] transition-colors hover:bg-[var(--ui-hover)] hover:text-[var(--ui-text-secondary)]"
           onClick={() => addTab()}
           aria-label="New tab"
         >
@@ -68,7 +68,7 @@ export function AppHeader() {
         </button>
       </div>
       <button
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-white/[0.06] hover:text-gray-200"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--ui-text-faint)] transition-colors hover:bg-[var(--ui-hover)] hover:text-[var(--ui-text-secondary)]"
         onClick={() => openSettings()}
         aria-label="Settings"
       >

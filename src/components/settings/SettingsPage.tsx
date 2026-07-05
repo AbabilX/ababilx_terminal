@@ -4,6 +4,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 
 import { isCdAlias } from "../../lib/aliases";
+import { isThemeDefaultBackground, themeBackground } from "../../lib/themes";
 import { openSettingsFile, useSettingsStore } from "../../store/settings";
 import type { AppSettings } from "../../types/terminal";
 import { WindowControls } from "../header/WindowControls";
@@ -24,7 +25,7 @@ interface SettingsPageProps {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="mb-3 text-base font-medium text-gray-100">{title}</h2>
+      <h2 className="mb-3 text-base font-medium text-[var(--ui-text)]">{title}</h2>
       <div>{children}</div>
     </section>
   );
@@ -107,26 +108,26 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
     <div className="flex h-full min-h-0 flex-col bg-[var(--app-background)]">
       <header
         data-tauri-drag-region
-        className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-4 py-3"
+        className="flex shrink-0 items-center justify-between border-b border-[var(--ui-border-subtle)] px-4 py-3"
       >
         <div className="flex items-center gap-3">
           <WindowControls />
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 items-center gap-1.5 rounded-md px-2 text-sm text-gray-400 hover:bg-white/[0.06] hover:text-gray-100"
+            className="flex h-8 items-center gap-1.5 rounded-md px-2 text-sm text-[var(--ui-text-muted)] hover:bg-[var(--ui-hover)] hover:text-[var(--ui-text)]"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2} />
             Back
           </button>
-          <h1 className="text-lg font-medium text-gray-100">Settings</h1>
+          <h1 className="text-lg font-medium text-[var(--ui-text)]">Settings</h1>
         </div>
         <div className="flex items-center gap-3">
-          {saving && <span className="text-xs text-gray-500">Saving…</span>}
+          {saving && <span className="text-xs text-[var(--ui-text-faint)]">Saving…</span>}
           <button
             type="button"
             onClick={() => openSettingsFile()}
-            className="rounded-md border border-white/10 px-3 py-1.5 text-xs text-gray-300 hover:bg-white/[0.06] hover:text-white"
+            className="rounded-md border border-[var(--ui-border)] px-3 py-1.5 text-xs text-[var(--ui-text-secondary)] hover:bg-[var(--ui-hover)] hover:text-[var(--ui-text-strong)]"
           >
             Open settings.json
           </button>
@@ -136,7 +137,7 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
         <div className="mx-auto w-full max-w-3xl">
           {error && (
-            <div className="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            <div className="mb-4 rounded-md border border-[var(--ui-danger-border)] bg-[var(--ui-danger-bg)] px-3 py-2 text-sm text-[var(--ui-danger-text)]">
               {error}
             </div>
           )}
@@ -146,7 +147,18 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
               <SelectInput
                 value={draft.appearance.theme}
                 onChange={(theme) =>
-                  patch((s) => ({ ...s, appearance: { ...s.appearance, theme } }))
+                  patch((s) => {
+                    const background = isThemeDefaultBackground(
+                      s.appearance.theme,
+                      s.appearance.background,
+                    )
+                      ? themeBackground(theme)
+                      : s.appearance.background;
+                    return {
+                      ...s,
+                      appearance: { ...s.appearance, theme, background },
+                    };
+                  })
                 }
                 options={[
                   { value: "dark", label: "Dark" },
@@ -343,7 +355,7 @@ export function SettingsPage({ onClose }: SettingsPageProps) {
           </Section>
 
           <Section title="Aliases">
-            <p className="mb-3 text-xs text-gray-500">
+            <p className="mb-3 text-xs text-[var(--ui-text-faint)]">
               Type the alias name and press Enter to run its cd command.
             </p>
             <AliasListEditor

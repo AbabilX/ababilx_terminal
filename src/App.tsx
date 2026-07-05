@@ -6,6 +6,7 @@ import { UpdateBanner } from "./components/UpdateBanner";
 import { SettingsPage } from "./components/settings";
 import { TerminalWorkspace } from "./components/terminal/TerminalWorkspace";
 import { useWindowFullscreenSync } from "./hooks/useWindowFullscreenSync";
+import { useAppThemeSync } from "./hooks/useAppThemeSync";
 import { matchesKeybind } from "./lib/keybinds";
 import { hexToRgba } from "./lib/color";
 import { useSettingsStore } from "./store/settings";
@@ -28,6 +29,7 @@ function App() {
   const hideHeader = appearance.hideHeader && !settingsOpen;
   const appBackground = hexToRgba(appearance.background, appearance.opacity);
   useWindowFullscreenSync();
+  useAppThemeSync();
   const appStyle: CSSProperties & { "--app-background": string } = {
     "--app-background": appBackground,
     background: appBackground,
@@ -97,7 +99,7 @@ function App() {
   return (
     <main
       className={`flex h-screen w-screen flex-col overflow-hidden ${
-        isFullscreen ? "" : "rounded-[16px] border border-white/10"
+        isFullscreen ? "" : "rounded-[16px] border border-[var(--ui-border)]"
       }`}
       style={appStyle}
     >

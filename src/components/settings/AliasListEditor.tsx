@@ -26,14 +26,14 @@ export function AliasListEditor({ aliases, onChange }: AliasListEditorProps) {
   return (
     <div className="flex flex-col gap-2">
       {aliases.length === 0 && (
-        <p className="text-xs text-gray-500">No aliases yet. Add one below.</p>
+        <p className="text-xs text-[var(--ui-text-faint)]">No aliases yet. Add one below.</p>
       )}
       {aliases.map((alias, i) => {
         const invalid = alias.func.trim() !== "" && !isCdAlias(alias.func);
         return (
           <div
             key={i}
-            className="flex flex-wrap items-center gap-2 rounded-md border border-white/[0.06] bg-white/[0.02] p-2"
+            className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--ui-border-subtle)] bg-[var(--ui-surface-subtle)] p-2"
           >
             <TextInput
               value={alias.name}
@@ -48,12 +48,12 @@ export function AliasListEditor({ aliases, onChange }: AliasListEditorProps) {
               className="min-w-[200px] flex-1 font-mono text-xs"
             />
             {invalid && (
-              <span className="text-xs text-red-400">Must be cd command</span>
+              <span className="text-xs text-[var(--ui-danger-text)]">Must be cd command</span>
             )}
             <button
               type="button"
               onClick={() => remove(i)}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 hover:bg-white/[0.06] hover:text-red-400"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--ui-text-faint)] hover:bg-[var(--ui-hover)] hover:text-[var(--ui-danger-text)]"
               aria-label="Remove alias"
             >
               <HugeiconsIcon icon={Delete02Icon} size={14} strokeWidth={2} />
@@ -64,7 +64,7 @@ export function AliasListEditor({ aliases, onChange }: AliasListEditorProps) {
       <button
         type="button"
         onClick={add}
-        className="flex w-fit items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-gray-400 hover:bg-white/[0.06] hover:text-gray-200"
+        className="flex w-fit items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-[var(--ui-text-muted)] hover:bg-[var(--ui-hover)] hover:text-[var(--ui-text-secondary)]"
       >
         <HugeiconsIcon icon={Add01Icon} size={14} strokeWidth={2} />
         Add alias

@@ -94,8 +94,8 @@ export interface AppSettings {
 export const DEFAULT_SETTINGS: AppSettings = {
   appearance: {
     theme: "dark",
-    background: "#0d1117",
-    opacity: 0.94,
+    background: "#050608",
+    opacity: 0.98,
     blur: 24,
     hideHeader: false,
   },

@@ -3,48 +3,63 @@ import remarkGfm from "remark-gfm";
 
 const COMPONENTS = {
   h1: (p: React.ComponentProps<"h1">) => (
-    <h1 className="mb-3 mt-5 text-xl font-semibold text-gray-100" {...p} />
+    <h1 className="mb-3 mt-5 text-xl font-semibold text-[var(--ui-text)]" {...p} />
   ),
   h2: (p: React.ComponentProps<"h2">) => (
-    <h2 className="mb-2 mt-4 text-lg font-semibold text-gray-100" {...p} />
+    <h2 className="mb-2 mt-4 text-lg font-semibold text-[var(--ui-text)]" {...p} />
   ),
   h3: (p: React.ComponentProps<"h3">) => (
-    <h3 className="mb-2 mt-3 text-base font-semibold text-gray-200" {...p} />
+    <h3 className="mb-2 mt-3 text-base font-semibold text-[var(--ui-text-secondary)]" {...p} />
   ),
   p: (p: React.ComponentProps<"p">) => (
-    <p className="my-2 leading-relaxed text-gray-300" {...p} />
+    <p className="my-2 leading-relaxed text-[var(--ui-text-secondary)]" {...p} />
   ),
   a: (p: React.ComponentProps<"a">) => (
-    <a className="text-blue-400 underline hover:text-blue-300" {...p} />
+    <a
+      className="text-[var(--ui-link)] underline hover:text-[var(--ui-link-hover)]"
+      {...p}
+    />
   ),
   ul: (p: React.ComponentProps<"ul">) => (
-    <ul className="my-2 list-disc pl-6 text-gray-300" {...p} />
+    <ul className="my-2 list-disc pl-6 text-[var(--ui-text-secondary)]" {...p} />
   ),
   ol: (p: React.ComponentProps<"ol">) => (
-    <ol className="my-2 list-decimal pl-6 text-gray-300" {...p} />
+    <ol className="my-2 list-decimal pl-6 text-[var(--ui-text-secondary)]" {...p} />
   ),
   li: (p: React.ComponentProps<"li">) => <li className="my-0.5" {...p} />,
   blockquote: (p: React.ComponentProps<"blockquote">) => (
     <blockquote
-      className="my-2 border-l-2 border-white/20 pl-3 text-gray-400"
+      className="my-2 border-l-2 border-[var(--ui-border)] pl-3 text-[var(--ui-text-muted)]"
       {...p}
     />
   ),
   code: (p: React.ComponentProps<"code">) => (
-    <code className="rounded bg-white/10 px-1 py-0.5 font-mono text-[0.85em] text-amber-200" {...p} />
+    <code
+      className="rounded bg-[var(--ui-hover-strong)] px-1 py-0.5 font-mono text-[0.85em] text-[var(--ui-code-inline-text)]"
+      {...p}
+    />
   ),
   pre: (p: React.ComponentProps<"pre">) => (
-    <pre className="my-2 overflow-x-auto rounded-lg bg-black/40 p-3 font-mono text-sm text-gray-200" {...p} />
+    <pre
+      className="my-2 overflow-x-auto rounded-lg bg-[var(--ui-code-bg)] p-3 font-mono text-sm text-[var(--ui-text-secondary)]"
+      {...p}
+    />
   ),
-  hr: () => <hr className="my-4 border-white/10" />,
+  hr: () => <hr className="my-4 border-[var(--ui-border)]" />,
   table: (p: React.ComponentProps<"table">) => (
     <table className="my-2 w-full border-collapse text-sm" {...p} />
   ),
   th: (p: React.ComponentProps<"th">) => (
-    <th className="border border-white/10 bg-white/5 px-2 py-1 text-left text-gray-200" {...p} />
+    <th
+      className="border border-[var(--ui-border)] bg-[var(--ui-table-header-bg)] px-2 py-1 text-left text-[var(--ui-text-secondary)]"
+      {...p}
+    />
   ),
   td: (p: React.ComponentProps<"td">) => (
-    <td className="border border-white/10 px-2 py-1 text-gray-300" {...p} />
+    <td
+      className="border border-[var(--ui-border)] px-2 py-1 text-[var(--ui-text-secondary)]"
+      {...p}
+    />
   ),
 };
 

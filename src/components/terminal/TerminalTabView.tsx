@@ -19,7 +19,7 @@ export function TerminalTabView({
   onClose,
   onReturn,
 }: TerminalTabViewProps) {
-  const borderColor = tab.borderColor ?? "rgba(255,255,255,0.1)";
+  const borderColor = tab.borderColor ?? "var(--ui-default-border-color)";
 
   return (
     <div
@@ -27,11 +27,11 @@ export function TerminalTabView({
       style={{ borderColor }}
     >
       {showHeader && (
-        <div className="flex h-8 shrink-0 items-center gap-2 border-b border-white/10 px-2 text-xs text-gray-300">
+        <div className="flex h-8 shrink-0 items-center gap-2 border-b border-[var(--ui-border)] px-2 text-xs text-[var(--ui-text-secondary)]">
           <span className="min-w-0 flex-1 truncate">{tab.title}</span>
           {onReturn && (
             <button
-              className="rounded px-2 py-1 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+              className="rounded px-2 py-1 text-[var(--ui-text-muted)] transition-colors hover:bg-[var(--ui-hover-strong)] hover:text-[var(--ui-text-strong)]"
               onClick={onReturn}
               aria-label="Return tab to top tabs"
               title="Return to tabs"
@@ -41,7 +41,7 @@ export function TerminalTabView({
           )}
           {onClose && (
             <button
-              className="rounded px-2 py-1 text-gray-400 transition-colors hover:bg-red-500/80 hover:text-white"
+              className="rounded px-2 py-1 text-[var(--ui-text-muted)] transition-colors hover:bg-red-500/80 hover:text-white"
               onClick={onClose}
               aria-label="Close split tab"
               title="Close tab"
@@ -56,7 +56,7 @@ export function TerminalTabView({
           <div
             key={paneId}
             className={`min-w-0 flex-1 p-2 ${
-              i > 0 ? "border-l border-white/10" : ""
+              i > 0 ? "border-l border-[var(--ui-border)]" : ""
             }`}
           >
             <Terminal sessionId={paneId} visible={visible} />

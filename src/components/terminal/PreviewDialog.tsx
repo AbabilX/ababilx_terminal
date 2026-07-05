@@ -35,27 +35,27 @@ export function PreviewDialog({ preview, onClose }: PreviewDialogProps) {
   const wide = preview.kind === "markdown";
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--ui-overlay-scrim)] backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className={`flex max-h-[90vh] flex-col overflow-hidden rounded-xl border border-white/10 bg-[#161b22]/95 shadow-2xl ${
+        className={`flex max-h-[90vh] flex-col overflow-hidden rounded-xl border border-[var(--ui-border)] bg-[var(--ui-panel)] shadow-2xl ${
           wide ? "w-[70vw] max-w-[900px]" : "max-w-[90vw]"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-4 py-2.5">
+        <div className="flex items-center gap-2.5 border-b border-[var(--ui-border-subtle)] px-4 py-2.5">
           <HugeiconsIcon
             icon={preview.kind ? KIND_ICONS[preview.kind] : File01Icon}
             size={15}
-            className="shrink-0 text-gray-400"
+            className="shrink-0 text-[var(--ui-text-muted)]"
             strokeWidth={2}
           />
-          <span className="min-w-0 flex-1 truncate font-mono text-sm text-gray-200">
+          <span className="min-w-0 flex-1 truncate font-mono text-sm text-[var(--ui-text-secondary)]">
             {preview.name || "preview"}
           </span>
           <button
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--ui-text-muted)] transition-colors hover:bg-[var(--ui-hover-strong)] hover:text-[var(--ui-text-strong)]"
             onClick={onClose}
             aria-label="Close preview"
           >

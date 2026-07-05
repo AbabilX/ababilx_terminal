@@ -1,5 +1,78 @@
 @import "tailwindcss";
 
+/* App chrome theme tokens — dark is default; light overrides via data-app-theme. */
+:root {
+  --ui-text: #f3f4f6;
+  --ui-text-secondary: #d1d5db;
+  --ui-text-muted: #9ca3af;
+  --ui-text-faint: #6b7280;
+  --ui-text-strong: #ffffff;
+  --ui-border: rgba(255, 255, 255, 0.1);
+  --ui-border-subtle: rgba(255, 255, 255, 0.06);
+  --ui-hover: rgba(255, 255, 255, 0.06);
+  --ui-hover-strong: rgba(255, 255, 255, 0.1);
+  --ui-surface: rgba(255, 255, 255, 0.04);
+  --ui-surface-subtle: rgba(255, 255, 255, 0.02);
+  --ui-active-surface: rgba(255, 255, 255, 0.07);
+  --ui-panel: rgba(5, 6, 8, 0.98);
+  --ui-overlay-scrim: rgba(0, 0, 0, 0.65);
+  --ui-overlay-strong-bg: rgba(0, 0, 0, 0.45);
+  --ui-overlay-ring: rgba(255, 255, 255, 0.2);
+  --ui-code-bg: rgba(0, 0, 0, 0.55);
+  --ui-code-inline-text: #fde68a;
+  --ui-table-header-bg: rgba(255, 255, 255, 0.05);
+  --ui-danger-text: #fca5a5;
+  --ui-danger-bg: rgba(239, 68, 68, 0.1);
+  --ui-danger-border: rgba(239, 68, 68, 0.3);
+  --ui-warning-text: rgba(254, 243, 199, 0.9);
+  --ui-warning-text-muted: rgba(254, 243, 199, 0.7);
+  --ui-warning-text-faint: rgba(254, 243, 199, 0.6);
+  --ui-warning-text-strong: #fffbeb;
+  --ui-warning-bg: rgba(251, 191, 36, 0.08);
+  --ui-warning-border: rgba(251, 191, 36, 0.2);
+  --ui-warning-hover-bg: rgba(251, 191, 36, 0.1);
+  --ui-link: #60a5fa;
+  --ui-link-hover: #93c5fd;
+  --ui-toggle-off: rgba(255, 255, 255, 0.15);
+  --ui-default-border-color: rgba(255, 255, 255, 0.1);
+}
+
+:root[data-app-theme="light"] {
+  --ui-text: #111827;
+  --ui-text-secondary: #374151;
+  --ui-text-muted: #6b7280;
+  --ui-text-faint: #9ca3af;
+  --ui-text-strong: #030712;
+  --ui-border: rgba(0, 0, 0, 0.12);
+  --ui-border-subtle: rgba(0, 0, 0, 0.08);
+  --ui-hover: rgba(0, 0, 0, 0.05);
+  --ui-hover-strong: rgba(0, 0, 0, 0.08);
+  --ui-surface: rgba(0, 0, 0, 0.035);
+  --ui-surface-subtle: rgba(0, 0, 0, 0.02);
+  --ui-active-surface: rgba(0, 0, 0, 0.06);
+  --ui-panel: rgba(255, 255, 255, 0.98);
+  --ui-overlay-scrim: rgba(0, 0, 0, 0.35);
+  --ui-overlay-strong-bg: rgba(0, 0, 0, 0.06);
+  --ui-overlay-ring: rgba(0, 0, 0, 0.15);
+  --ui-code-bg: rgba(0, 0, 0, 0.04);
+  --ui-code-inline-text: #92400e;
+  --ui-table-header-bg: rgba(0, 0, 0, 0.04);
+  --ui-danger-text: #b91c1c;
+  --ui-danger-bg: rgba(239, 68, 68, 0.08);
+  --ui-danger-border: rgba(239, 68, 68, 0.35);
+  --ui-warning-text: #92400e;
+  --ui-warning-text-muted: #a16207;
+  --ui-warning-text-faint: #b45309;
+  --ui-warning-text-strong: #78350f;
+  --ui-warning-bg: rgba(251, 191, 36, 0.15);
+  --ui-warning-border: rgba(217, 119, 6, 0.25);
+  --ui-warning-hover-bg: rgba(251, 191, 36, 0.2);
+  --ui-link: #2563eb;
+  --ui-link-hover: #1d4ed8;
+  --ui-toggle-off: rgba(0, 0, 0, 0.15);
+  --ui-default-border-color: rgba(0, 0, 0, 0.12);
+}
+
 @font-face {
   font-family: "Purno Pran Unicode";
   src: url("./assets/fonts/PurnoPranUnicode.ttf") format("truetype");
