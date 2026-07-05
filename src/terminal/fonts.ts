@@ -5,7 +5,11 @@
  * finish loading — otherwise the browser substitutes a fallback font for
  * that first measurement and the grid comes out wrong.
  */
-const FACES = ['16px "JetBrains Mono"', '16px "Purno Pran Unicode"'];
+const FACES = [
+  '16px "JetBrains Mono"',
+  '700 16px "JetBrains Mono"',
+  '16px "Purno Pran Unicode"',
+];
 
 let ready: Promise<void> | undefined;
 

@@ -100,7 +100,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     hideHeader: false,
   },
   terminal: {
-    fontFamily: "JetBrains Mono, Consolas, monospace, 'Purno Pran Unicode'",
+    fontFamily: "JetBrains Mono, 'Purno Pran Unicode', Consolas, monospace",
     fontSize: 14,
     foreground: "auto",
     cursorStyle: "block",

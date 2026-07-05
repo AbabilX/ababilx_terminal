@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import type { Terminal } from "@xterm/xterm";
 import type { FitAddon } from "@xterm/addon-fit";
 
-import { createTerminal } from "../terminal/createTerminal";
+import { createTerminal, enableWebgl } from "../terminal/createTerminal";
 import { applyTerminalSettings } from "../terminal/applyTerminalSettings";
 import { ensureFontsReady } from "../terminal/fonts";
 import { wireTerminal } from "../terminal/wireTerminal";
@@ -41,6 +41,7 @@ export function useTerminalSession({
 
       const { terminal, fitAddon } = createTerminal();
       terminal.open(containerRef.current);
+      enableWebgl(terminal); // GPU renderer — must follow open()
       fitAddon.fit();
       terminal.focus();
 

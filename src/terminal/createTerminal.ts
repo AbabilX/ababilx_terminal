@@ -1,10 +1,26 @@
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
+import { WebglAddon } from "@xterm/addon-webgl";
 
 import { matchesKeybind } from "../lib/keybinds";
 import { useSettingsStore } from "../store/settings";
 import { terminalTheme } from "./applyTerminalSettings";
+
+/** Attaches the GPU (WebGL) renderer for fast, smooth scroll. Must run AFTER
+ * terminal.open() — the addon needs the mounted canvas. If the GPU context is
+ * lost (driver reset, tab backgrounded) it disposes itself so xterm falls back
+ * to its DOM renderer instead of freezing. Silently no-ops if WebGL is
+ * unavailable, keeping the DOM renderer. */
+export function enableWebgl(terminal: Terminal) {
+  try {
+    const addon = new WebglAddon();
+    addon.onContextLoss(() => addon.dispose());
+    terminal.loadAddon(addon);
+  } catch {
+    // No WebGL (rare in the Tauri webview) — DOM renderer stays active.
+  }
+}
 
 /** Builds an xterm instance styled from settings, with fit + weblinks. */
 export function createTerminal() {
