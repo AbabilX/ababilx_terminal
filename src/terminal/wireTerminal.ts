@@ -5,6 +5,7 @@ import { listen } from "@tauri-apps/api/event";
 import { closeSession, createSession, resizeSession } from "../lib/tauri";
 import { routeInput, type InputContext } from "./routeInput";
 import { LsPicker } from "./lsPicker";
+import { CwdTracker } from "./cwdTracker";
 import { useTerminalStore } from "../store/terminal";
 
 interface PtyOutput {
@@ -23,7 +24,13 @@ export function wireTerminal(
 ): () => void {
   let disposed = false;
   const picker = new LsPicker(terminal, container);
-  const ctx: InputContext = { sessionId, picker, preview };
+
+  // Seed the CWD tracker with the platform home directory. This matches the
+  // default cwd that PtySession uses when it spawns the shell process.
+  const homeDir = getHomeDir();
+  const cwdTracker = new CwdTracker(homeDir);
+
+  const ctx: InputContext = { sessionId, picker, cwdTracker, preview };
 
   terminal.onData((data) => routeInput(ctx, data));
   terminal.onResize(({ cols, rows }) => resizeSession(sessionId, cols, rows));
@@ -60,4 +67,12 @@ export function wireTerminal(
     picker.dispose();
     terminal.dispose();
   };
+}
+
+/** Returns the initial CWD for the CwdTracker. We use "~" because the Rust
+ * `list_dir` command expands tilde to the real home directory before calling
+ * `std::fs::read_dir`. The tracker also passes "~" to `noteCommand()` so plain
+ * `cd` and `cd ~` correctly reset back to home. */
+function getHomeDir(): string {
+  return "~";
 }

@@ -4,6 +4,7 @@ import { CmdHighlight } from "./cmdHighlight";
 import { LineMirror } from "./lineMirror";
 import { LsTracker } from "./tracker";
 import { PickerOverlay } from "./overlay";
+import type { DirEntry } from "../../lib/tauri";
 
 /** Numbers `ls` output 0-9; a digit borders an entry, Enter cds into it,
  * Esc / any other key dismisses. */
@@ -11,6 +12,7 @@ export class LsPicker {
   /** True while the overlay is showing and digit keys should be captured. */
   active = false;
 
+  private term: Terminal;
   private overlay: PickerOverlay;
   private mirror: LineMirror;
   private highlight: CmdHighlight;
@@ -18,6 +20,7 @@ export class LsPicker {
   private scrollSub: IDisposable;
 
   constructor(term: Terminal, host: HTMLElement) {
+    this.term = term;
     this.overlay = new PickerOverlay(term, host);
     this.mirror = new LineMirror(term);
     this.highlight = new CmdHighlight(term, host);
@@ -55,16 +58,26 @@ export class LsPicker {
       this.dismiss(); // new output underneath would misalign the overlay
       return;
     }
+    // Forward to tracker so it can resolve buffer positions once output settles.
     this.tracker.noteOutput();
+  }
+
+  /**
+   * Called by routeInput when the user presses Enter on a plain `ls`.
+   * Immediately stores the Rust-sourced directory list and arms the tracker
+   * to resolve pixel positions once PTY output settles.
+   *
+   * Works on all platforms — the source of truth for which entries are
+   * directories comes from Rust `list_dir`, not from OS-shell flag parsing.
+   */
+  armLs(entries: DirEntry[]) {
+    const buf = this.term.buffer.active;
+    const startRow = buf.baseY + buf.cursorY + 1;
+    this.tracker.setRustEntries(entries, startRow);
   }
 
   select(index: number) {
     this.overlay.select(index);
-  }
-
-  /** Arms the tracker for a rewritten `ls -1p` sent from the input router. */
-  armLs() {
-    this.tracker.arm();
   }
 
   /** Command for the bordered entry; null when nothing selected. */
@@ -72,11 +85,10 @@ export class LsPicker {
     if (!this.active) return null;
     const entry = this.overlay.selectedEntry;
     if (!entry) return null;
-    const clean = entry.name.replace(/\/+$/, ""); // drop the `-p` trailing slash
-    const name = clean.replace(/'/g, `'\\''`);
+    const clean = entry.name.replace(/\/+$/, ""); // drop trailing slash
+    const name = clean.replace(/'/g, `'\\'`);
     this.dismiss();
-    this.tracker.arm();
-    return `cd '${name}' && ls -1p`;
+    return `cd '${name}'`;
   }
 
   dismiss() {
@@ -97,8 +109,6 @@ export class LsPicker {
   }
 
   private onEnter() {
-    // A plain `ls` is intercepted + rewritten in routeInput before it reaches
-    // here, so this only resets state for every other Enter.
     this.mirror.reset();
     this.dismiss();
   }

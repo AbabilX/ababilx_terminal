@@ -1,5 +1,18 @@
 import { invoke } from "@tauri-apps/api/core";
 
+export interface DirEntry {
+  name: string;
+  is_dir: boolean;
+  size: number;
+}
+
+/** Lists directory contents using Rust std::fs — no OS shell involved.
+ *  Works cross-platform (Windows, macOS, Linux). Entries are sorted:
+ *  directories first, then files, each group alphabetically. */
+export async function listDir(path: string): Promise<DirEntry[]> {
+  return invoke<DirEntry[]>("list_dir", { path });
+}
+
 export async function ping() {
   return invoke<string>("ping");
 }

@@ -45,6 +45,7 @@ pub fn run() {
             commands::settings::write_settings,
             commands::settings::open_settings,
             commands::preview::read_preview_file,
+            commands::terminal::list_dir,
             commands::update::get_platform
         ])
         .run(tauri::generate_context!())
