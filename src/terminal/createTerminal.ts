@@ -43,14 +43,15 @@ export function createTerminal() {
   terminal.loadAddon(fitAddon);
   terminal.loadAddon(new WebLinksAddon());
 
-  // Let app-level shortcuts (new tab, split, settings) bubble past xterm.
+  // Let app-level shortcuts (new tab, split, settings, command palette) bubble past xterm.
   terminal.attachCustomKeyEventHandler((e) => {
     if (e.type !== "keydown") return true;
     const kb = useSettingsStore.getState().settings.keybindings;
     const isAppShortcut = Object.values(kb).some((binding) =>
       matchesKeybind(e, binding),
     );
-    return !isAppShortcut;
+    const isPaletteShortcut = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p";
+    return !(isAppShortcut || isPaletteShortcut);
   });
 
   return { terminal, fitAddon };

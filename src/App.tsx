@@ -2,6 +2,8 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { AppHeader } from "./components/AppHeader";
+import { CommandPalette } from "./components/CommandPalette";
+import { TabSwitcher } from "./components/TabSwitcher";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { SettingsPage } from "./components/settings";
 import { TerminalWorkspace } from "./components/terminal/TerminalWorkspace";
@@ -89,6 +91,9 @@ function App() {
       } else if (matchesKeybind(e, keybindings.settings)) {
         e.preventDefault();
         useUiStore.getState().toggleSettings();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        useUiStore.getState().toggleCommandPalette();
       }
     };
 
@@ -128,6 +133,8 @@ function App() {
             <SettingsPage onClose={closeSettings} />
           </div>
         )}
+        <CommandPalette />
+        <TabSwitcher />
       </div>
     </main>
   );

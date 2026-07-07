@@ -9,5 +9,6 @@ export const isWindows = /Windows/i.test(navigator.userAgent);
  * kill-line only in Emacs-mode readline and echoes as a literal `^U` under
  * PSReadLine's default Windows edit mode. */
 export function eraseChars(n: number): string {
-  return "\x7f".repeat(Math.max(0, n));
+  const char = isWindows ? "\x08" : "\x7f";
+  return char.repeat(Math.max(0, n));
 }
